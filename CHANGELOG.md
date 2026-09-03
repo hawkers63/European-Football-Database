@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.3 - UI/UX overhaul
+- Modular `ui/` package: sidebar, header, rich tie cards, knockout bracket, club profile.
+- Fixtures List and Tournament Bracket views; columns follow `round_order`.
+- Period-accurate names on every club label via a batched `get_club_display_name` cache.
+- Yearbook colours (victory green #2ea043, brass gold #d4af37) with a Dark/Light toggle.
+- Missing `european_football.db` shows an in-window instruction to run `python build_database.py`.
+
 ## v1.2 - Period names, multi-lineage, CLI & RSSSF import
 - Additive `club_name_history` table with `get_club_display_name(club_id, edition_id)`
   (MTK 1955-56 displays as *Vörös Lobogó*; later seasons stay *MTK Budapest*).

@@ -5,15 +5,16 @@ app.py - European Football Database viewer (Classic Era)
 
 A CustomTkinter desktop viewer over `european_football.db`. Pick a competition
 and season; each round renders as paired-fixture cards with the two-legged
-aggregate auto-calculated and the winner highlighted. Play-offs, coin tosses,
-walkovers and one-off finals are shown for what they are.
+aggregate auto-calculated and the winner highlighted. A tournament bracket
+view sits alongside the fixtures list.
 
 Requirements:  pip install customtkinter
-Run:           python app.py   (run build_database.py first if the .db is missing)
+Run:           python app.py   (if the .db is missing, run: python build_database.py)
 """
 
+from __future__ import annotations
+
 import os
-import sqlite3
 import sys
 
 try:
@@ -23,166 +24,51 @@ except ImportError:
     if __name__ == "__main__":
         sys.exit("CustomTkinter is not installed. Run:  pip install customtkinter")
 
+from ui.formatters import (  # noqa: F401  - re-exported for tests/test_ui_helpers.py
+    CARD,
+    DECISION_TAG,
+    DIM,
+    HEAD,
+    MATCH_SEP,
+    NOTE,
+    WIN,
+    _decider_leg,
+    _field,
+    aggregate_from_matches,
+    compose_tie_detail,
+    connect,
+    format_attendance,
+    format_champion_banner,
+    format_match_line,
+    format_score_header,
+    load_club_name_cache,
+    match_extra_fragments,
+    missing_database_message,
+    tie_aggregate,
+    wraplength_for_width,
+)
+from ui.theme import GOLD, palette
+from ui.data import (
+    fetch_club_profile,
+    fetch_edition_payload,
+    final_score_text,
+    tie_matches_query,
+)
+from ui.header import BRACKET_LABEL, FIXTURES_LABEL, HeaderBar
+from ui.sidebar import Sidebar
+from ui.tie_card import render_tie_card
+from ui.bracket_view import BracketView
+from ui.club_dialog import ClubProfileDialog
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(HERE, "european_football.db")
 
-WIN = "#3ba55d"     # winner accent
-DIM = "#8a8f98"     # secondary text / losing side
-CARD = "#2b2d31"
-HEAD = "#1e1f22"
-NOTE = "#d4b45a"    # historical-note callout
-
-# How each decision type is labelled in the UI.
-DECISION_TAG = {
-    "replay": "play-off", "coin_toss": "coin toss",
-    "walkover": "walkover", "bye": "bye",
-}
-
-MATCH_SEP = "     \u00b7     "
-
-
-def connect(path=None):
-    conn = sqlite3.connect(path or DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
-    return conn
-
-
-def _field(row, key, default=None):
-    """Read a key from a mapping or sqlite3.Row, returning default if absent/NULL."""
-    try:
-        keys = row.keys() if hasattr(row, "keys") else None
-        if keys is not None and key not in keys:
-            return default
-        val = row[key]
-    except (KeyError, IndexError, TypeError):
-        return default
-    return default if val is None else val
-
-
-def load_club_name_cache(cur):
-    """Pre-load club_id -> name so tie rendering does not N+1 query the registry."""
-    return {row["club_id"]: row["name"] for row in cur.execute(
-        "SELECT club_id, name FROM club")}
-
-
-def tie_aggregate(cur, tie):
-    """Aggregate over the two legs only (a play-off is a separate decider)."""
-    a, b = tie["club_a_id"], tie["club_b_id"]
-    ga = gb = 0
-    for m in cur.execute(
-        "SELECT home_club_id, away_club_id, home_score, away_score "
-        "FROM match WHERE tie_id=? AND leg_number IN (1,2)", (tie["tie_id"],)
-    ):
-        if m["home_score"] is None:
-            continue
-        if m["home_club_id"] == a: ga += m["home_score"]
-        if m["away_club_id"] == a: ga += m["away_score"]
-        if m["home_club_id"] == b: gb += m["home_score"]
-        if m["away_club_id"] == b: gb += m["away_score"]
-    return ga, gb
-
-
-def format_attendance(attendance):
-    """Return e.g. '135,000 spectators', or None when attendance is missing."""
-    if attendance in (None, ""):
-        return None
-    try:
-        n = int(attendance)
-    except (TypeError, ValueError):
-        return None
-    return f"{n:,} spectators"
-
-
-def match_extra_fragments(m):
-    """Venue, date, referee and attendance fragments; empty values are omitted."""
-    referee = _field(m, "referee")
-    return [x for x in (
-        _field(m, "venue"),
-        _field(m, "match_date"),
-        f"ref {referee}" if referee else None,
-        format_attendance(_field(m, "attendance")),
-    ) if x]
-
-
-def format_match_line(home_name, away_name, m):
-    seg = f"{home_name} {_field(m, 'home_score')}-{_field(m, 'away_score')} {away_name}"
-    if _field(m, "after_extra_time"):
-        seg += " (aet)"
-    extras = match_extra_fragments(m)
-    if extras:
-        seg += "  (" + "; ".join(extras) + ")"
-    return seg
-
-
-def compose_tie_detail(parts, notes, separator=None):
-    """
-    Split match scores and historical notes.
-
-    Notes are never discarded merely because match lines exist; the caller
-    renders `notes_callout` in a distinct sub-label when it is non-empty.
-    """
-    if separator is None:
-        separator = MATCH_SEP
-    match_detail = separator.join(parts) if parts else ""
-    notes_callout = notes or ""
-    return match_detail, notes_callout
-
-
-def _decider_leg(legs):
-    """Third (or later) leg is the play-off / replay."""
-    for m in legs:
-        ln = _field(m, "leg_number")
-        if ln is not None and int(ln) >= 3:
-            return m
-    if len(legs) >= 3:
-        return legs[2]
-    return None
-
-
-def format_score_header(ga, gb, decided_by, legs):
-    """
-    Card header scoreline. Two-legged ties settled by replay or coin toss keep
-    the aggregate visible but name the decider, so 5-5 is not mistaken for a
-    scoring error.
-    """
-    if not legs:
-        return "w/o"
-    if decided_by == "single_match":
-        return f"{ga} - {gb}"
-    score = f"{ga}-{gb}"
-    if decided_by == "replay":
-        replay = _decider_leg(legs)
-        if replay is not None and _field(replay, "home_score") is not None:
-            hs = _field(replay, "home_score")
-            aws = _field(replay, "away_score")
-            score += f" (Replay: {hs}-{aws})"
-    elif decided_by == "coin_toss":
-        score += " (Coin Toss)"
-    return score
-
-
-def wraplength_for_width(width, padding=28, minimum=200):
-    try:
-        w = int(width)
-    except (TypeError, ValueError):
-        return minimum
-    return max(minimum, w - padding)
-
-
-def format_champion_banner(winner, runner_up):
-    bits = []
-    if winner:
-        bits.append("\u2605 Champions\n%s" % winner)
-    if runner_up:
-        bits.append("Runner-up\n%s" % runner_up)
-    return "\n\n".join(bits)
-
 
 class App(ctk.CTk if ctk is not None else object):
-    def __init__(self):
+    def __init__(self, db_path=None):
         if ctk is None:
-            raise RuntimeError("CustomTkinter is not installed. Run:  pip install customtkinter")
+            raise RuntimeError(
+                "CustomTkinter is not installed. Run:  pip install customtkinter")
         super().__init__()
         self.title("European Football Database - Classic Era")
         self.geometry("1000x740")
@@ -190,18 +76,34 @@ class App(ctk.CTk if ctk is not None else object):
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
 
-        self.conn = connect()
-        self.cur = self.conn.cursor()
+        self._db_path = db_path or DB_PATH
+        self._colours = palette("dark")
+        self._appearance = "dark"
+        self._ignore_menu = 0
+        self._payload = None
         self._club_names = {}
+        self._view = FIXTURES_LABEL
+        self._search = ""
+        self.conn = None
+        self.cur = None
+        self.lineages = {}
+        self.editions = {}
 
         self.grid_columnconfigure(0, weight=0)
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=0)
         self.grid_rowconfigure(1, weight=1)
+        self.protocol("WM_DELETE_WINDOW", self._on_close)
+
+        if not os.path.exists(self._db_path):
+            self._build_missing_db()
+            return
+
+        self.conn = connect(self._db_path)
+        self.cur = self.conn.cursor()
         self._build_sidebar()
         self._build_main()
         self._load_competitions()
-        self.protocol("WM_DELETE_WINDOW", self._on_close)
 
     def _on_close(self):
         try:
@@ -212,161 +114,191 @@ class App(ctk.CTk if ctk is not None else object):
         finally:
             self.destroy()
 
-    def _build_sidebar(self):
-        bar = ctk.CTkFrame(self, width=250, corner_radius=0)
-        bar.grid(row=0, column=0, rowspan=2, sticky="nsw")
-        bar.grid_propagate(False)
-        ctk.CTkLabel(bar, text="European Football\nDatabase",
-                     font=ctk.CTkFont(size=20, weight="bold"), justify="left"
-                     ).pack(padx=20, pady=(24, 2), anchor="w")
-        ctk.CTkLabel(bar, text="The Classic Era", text_color=DIM
-                     ).pack(padx=20, pady=(0, 24), anchor="w")
+    def _build_missing_db(self):
+        """In-window setup message; do not sys.exit when the database is absent."""
+        msg = missing_database_message(self._db_path)
+        hold = ctk.CTkFrame(self, fg_color="transparent")
+        hold.grid(row=0, column=0, columnspan=2, rowspan=2, sticky="nsew", padx=40, pady=40)
+        ctk.CTkLabel(
+            hold, text="Database not found",
+            font=ctk.CTkFont(size=22, weight="bold"),
+        ).pack(anchor="w")
+        ctk.CTkLabel(
+            hold, text=msg, justify="left", wraplength=640,
+            font=ctk.CTkFont(size=14),
+        ).pack(anchor="w", pady=(12, 0))
 
-        ctk.CTkLabel(bar, text="Competition").pack(padx=20, pady=(0, 4), anchor="w")
-        self.competition_menu = ctk.CTkOptionMenu(bar, values=["-"], width=210,
-                                                  command=self._on_competition)
-        self.competition_menu.pack(padx=20, pady=(0, 16), anchor="w")
-        ctk.CTkLabel(bar, text="Season").pack(padx=20, pady=(0, 4), anchor="w")
-        self.season_menu = ctk.CTkOptionMenu(bar, values=["-"], width=210,
-                                            command=self._on_season)
-        self.season_menu.pack(padx=20, pady=(0, 16), anchor="w")
-        self.champ_label = ctk.CTkLabel(bar, text="", text_color=WIN, wraplength=210,
-                                        justify="left", font=ctk.CTkFont(size=13, weight="bold"))
-        self.champ_label.pack(padx=20, pady=(24, 0), anchor="w")
-        self.edition_notes_label = ctk.CTkLabel(
-            bar, text="", text_color=DIM, wraplength=210, justify="left",
-            font=ctk.CTkFont(size=12))
-        self.edition_notes_label.pack(padx=20, pady=(12, 16), anchor="w")
+    def _build_sidebar(self):
+        self.sidebar = Sidebar(
+            self, self._colours,
+            on_competition=self._on_competition,
+            on_season=self._on_season,
+        )
+        self.sidebar.grid(row=0, column=0, rowspan=2, sticky="nsw")
+        self.competition_menu = self.sidebar.competition_menu
+        self.season_menu = self.sidebar.season_menu
+        self.champ_label = self.sidebar.champ_label
+        self.edition_notes_label = self.sidebar.edition_notes_label
 
     def _build_main(self):
-        self.header = ctk.CTkLabel(self, text="", anchor="w",
-                                   font=ctk.CTkFont(size=22, weight="bold"))
+        self.header = HeaderBar(
+            self, self._colours,
+            on_search=self._on_search,
+            on_view=self._on_view,
+            on_appearance=self._on_appearance,
+        )
         self.header.grid(row=0, column=1, sticky="ew", padx=24, pady=(16, 8))
         self.scroll = ctk.CTkScrollableFrame(self, corner_radius=0)
         self.scroll.grid(row=1, column=1, sticky="nsew", padx=16, pady=(0, 16))
         self.scroll.grid_columnconfigure(0, weight=1)
+        self.bracket = BracketView(
+            self, self._colours, on_club=self._open_club)
 
     def _load_competitions(self):
         self.lineages = {r["name"]: r["lineage_id"]
-                         for r in self.cur.execute("SELECT lineage_id, name FROM lineage ORDER BY name")}
+                         for r in self.cur.execute(
+                             "SELECT lineage_id, name FROM lineage ORDER BY name")}
         names = list(self.lineages) or ["-"]
-        self.competition_menu.configure(values=names)
-        self.competition_menu.set(names[0]); self._on_competition(names[0])
+        self._ignore_menu += 1
+        try:
+            self.sidebar.set_competitions(names, names[0])
+            self._fill_seasons(names[0])
+            labels = list(self.editions) or ["-"]
+            self.sidebar.set_seasons(labels, labels[-1])
+        finally:
+            self._ignore_menu -= 1
+        self._on_season(labels[-1])
 
-    def _on_competition(self, name):
-        lid = self.lineages.get(name)
+    def _fill_seasons(self, competition_name):
+        lid = self.lineages.get(competition_name)
         self.editions = {}
         if lid is not None:
             for r in self.cur.execute(
-                "SELECT edition_id, season_label FROM edition WHERE lineage_id=? ORDER BY start_year", (lid,)):
+                    "SELECT edition_id, season_label FROM edition "
+                    "WHERE lineage_id=? ORDER BY start_year", (lid,)):
                 self.editions[r["season_label"]] = r["edition_id"]
+
+    def _on_competition(self, name):
+        if self._ignore_menu:
+            return
+        self._fill_seasons(name)
         labels = list(self.editions) or ["-"]
-        self.season_menu.configure(values=labels)
-        self.season_menu.set(labels[-1]); self._on_season(labels[-1])
+        self._ignore_menu += 1
+        try:
+            self.sidebar.set_seasons(labels, labels[-1])
+        finally:
+            self._ignore_menu -= 1
+        self._on_season(labels[-1])
 
     def _on_season(self, label):
+        if self._ignore_menu:
+            return
         eid = self.editions.get(label)
         if eid is not None:
             self._render_edition(eid)
 
+    def _on_search(self, text):
+        self._search = text or ""
+        self._refresh_view()
+
+    def _on_view(self, value):
+        if self._ignore_menu:
+            return
+        self._view = value or FIXTURES_LABEL
+        self._refresh_view()
+
+    def _on_appearance(self, mode):
+        self._appearance = "light" if str(mode).lower().startswith("light") else "dark"
+        ctk.set_appearance_mode(self._appearance)
+        self._colours = palette(self._appearance)
+        if getattr(self, "sidebar", None) is not None:
+            self.sidebar.apply_palette(self._colours)
+        if getattr(self, "header", None) is not None:
+            self.header.apply_palette(self._colours)
+        if getattr(self, "bracket", None) is not None:
+            self.bracket.apply_palette(self._colours)
+        self._refresh_view()
+
     def _render_edition(self, edition_id):
+        # Canonical names (test-pinned helper) plus the richer per-edition cache.
+        self._club_names = load_club_name_cache(self.cur)
+        self._payload = fetch_edition_payload(self.cur, edition_id)
+        clubs = self._payload["clubs"]
+        for cid, info in clubs.items():
+            self._club_names[cid] = info.get("display_name") or info.get("name")
+
+        ed = self._payload["edition"]
+        winner_id = ed.get("winner_club_id")
+        runner_id = ed.get("runner_up_club_id")
+        winner = (clubs.get(winner_id) or {}).get("display_name") if winner_id else None
+        runner = (clubs.get(runner_id) or {}).get("display_name") if runner_id else None
+        self.sidebar.set_champions(winner, runner, final_score_text(self._payload))
+        self.sidebar.set_notes(ed.get("notes") or "")
+        self.sidebar.set_stats(
+            self._payload["match_count"], self._payload["goal_count"])
+
+        rounds = self._payload["rounds"]
+        first_round = rounds[0]["name"] if rounds else ""
+        last_round = rounds[-1]["name"] if rounds else ""
+        round_span = first_round if first_round == last_round else (
+            "%s \u2013 %s" % (first_round, last_round) if first_round else "")
+        lineage_name = None
+        for name, lid in self.lineages.items():
+            if lid == ed.get("lineage_id"):
+                lineage_name = name
+                break
+        self.header.set_breadcrumbs(
+            lineage_name or ed.get("competition_name") or "",
+            ed.get("season_label") or "",
+            round_span,
+        )
+        self._refresh_view()
+
+    def _refresh_view(self):
+        if self._payload is None:
+            return
+        show_bracket = self._view == BRACKET_LABEL
+        if show_bracket:
+            self.scroll.grid_remove()
+            self.bracket.grid(row=1, column=1, sticky="nsew", padx=16, pady=(0, 16))
+            self.bracket.populate(self._payload, self._search)
+        else:
+            self.bracket.grid_remove()
+            self.scroll.grid()
+            self._render_fixtures()
+
+    def _render_fixtures(self):
         for w in self.scroll.winfo_children():
             w.destroy()
-        self._club_names = load_club_name_cache(self.cur)
-        ed = self.cur.execute(
-            "SELECT e.*, w.name AS winner, ru.name AS runner_up FROM edition e "
-            "LEFT JOIN club w ON w.club_id=e.winner_club_id "
-            "LEFT JOIN club ru ON ru.club_id=e.runner_up_club_id "
-            "WHERE e.edition_id=?",
-            (edition_id,)).fetchone()
-        self.header.configure(text=f"{ed['competition_name']}  {ed['season_label']}")
-        self.champ_label.configure(text=format_champion_banner(ed["winner"], ed["runner_up"]))
-        self.edition_notes_label.configure(text=ed["notes"] or "")
-
+        payload = self._payload
+        clubs = payload["clubs"]
+        query = self._search
         r = 0
-        for rnd in self.cur.execute(
-            "SELECT * FROM round WHERE edition_id=? ORDER BY round_order", (edition_id,)):
-            ctk.CTkLabel(self.scroll, text=rnd["name"].upper(), anchor="w",
-                         font=ctk.CTkFont(size=13, weight="bold"),
-                         fg_color=HEAD, corner_radius=6, padx=12, pady=6
-                         ).grid(row=r, column=0, sticky="ew", pady=(14, 6)); r += 1
-            for tie in self.cur.execute(
-                "SELECT * FROM tie WHERE round_id=? ORDER BY tie_id", (rnd["round_id"],)):
-                self._render_tie(tie, r); r += 1
+        for rnd in payload["rounds"]:
+            ties = [t for t in (rnd.get("ties") or [])
+                    if tie_matches_query(t, clubs, query)]
+            if query and not ties:
+                continue
+            ctk.CTkLabel(
+                self.scroll, text=str(rnd["name"]).upper(), anchor="w",
+                font=ctk.CTkFont(size=13, weight="bold"),
+                fg_color=self._colours["head"], corner_radius=6, padx=12, pady=6,
+            ).grid(row=r, column=0, sticky="ew", pady=(14, 6))
+            r += 1
+            for tie in ties:
+                render_tie_card(
+                    self.scroll, tie, clubs, self._colours,
+                    on_club=self._open_club, row=r)
+                r += 1
 
-    def _club_name(self, club_id):
-        name = self._club_names.get(club_id)
-        if name is None:
-            row = self.cur.execute("SELECT name FROM club WHERE club_id=?", (club_id,)).fetchone()
-            name = row[0] if row else "?"
-            self._club_names[club_id] = name
-        return name
-
-    def _attach_dynamic_wrap(self, card, *labels, padding=28):
-        def _on_configure(event, widget=card, lbls=labels, pad=padding):
-            if event.widget is not widget:
-                return
-            wrap = wraplength_for_width(event.width, padding=pad)
-            for lbl in lbls:
-                if int(lbl.cget("wraplength") or 0) != wrap:
-                    lbl.configure(wraplength=wrap)
-        card.bind("<Configure>", _on_configure)
-
-    def _render_tie(self, tie, row):
-        card = ctk.CTkFrame(self.scroll, fg_color=CARD, corner_radius=8)
-        card.grid(row=row, column=0, sticky="ew", pady=4)
-        for col, wt in ((0, 1), (1, 0), (2, 1)):
-            card.grid_columnconfigure(col, weight=wt)
-        a_name, b_name = self._club_name(tie["club_a_id"]), self._club_name(tie["club_b_id"])
-        winner = tie["winner_club_id"]
-        a_col = WIN if winner == tie["club_a_id"] else DIM
-        b_col = WIN if winner == tie["club_b_id"] else DIM
-
-        legs = self.cur.execute(
-            "SELECT * FROM match WHERE tie_id=? ORDER BY leg_number", (tie["tie_id"],)).fetchall()
-        if legs:
-            ga, gb = tie_aggregate(self.cur, tie)
-            score = format_score_header(ga, gb, tie["decided_by"], legs)
-        else:
-            score = format_score_header(0, 0, tie["decided_by"], [])
-
-        ctk.CTkLabel(card, text=a_name, anchor="e", text_color=a_col,
-                     font=ctk.CTkFont(size=15, weight="bold")
-                     ).grid(row=0, column=0, sticky="e", padx=(14, 8), pady=(10, 0))
-        ctk.CTkLabel(card, text=score, font=ctk.CTkFont(size=15, weight="bold")
-                     ).grid(row=0, column=1, padx=6, pady=(10, 0))
-        ctk.CTkLabel(card, text=b_name, anchor="w", text_color=b_col,
-                     font=ctk.CTkFont(size=15, weight="bold")
-                     ).grid(row=0, column=2, sticky="w", padx=(8, 14), pady=(10, 0))
-
-        parts = []
-        for m in legs:
-            hn, an = self._club_name(m["home_club_id"]), self._club_name(m["away_club_id"])
-            parts.append(format_match_line(hn, an, m))
-        match_detail, notes_callout = compose_tie_detail(parts, tie["notes"])
-        tag = DECISION_TAG.get(tie["decided_by"], "")
-        prefix = f"[{tag}]  " if tag else ""
-        detail_text = prefix + match_detail
-        wrap_labels = []
-        detail_pady = (2, 4) if notes_callout else (2, 10)
-        if detail_text.strip():
-            detail_lbl = ctk.CTkLabel(card, text=detail_text, text_color=DIM,
-                                      font=ctk.CTkFont(size=12), anchor="center", wraplength=680)
-            detail_lbl.grid(row=1, column=0, columnspan=3, sticky="ew", padx=14, pady=detail_pady)
-            wrap_labels.append(detail_lbl)
-        if notes_callout:
-            note_lbl = ctk.CTkLabel(card, text=notes_callout, text_color=NOTE,
-                                    font=ctk.CTkFont(size=12, slant="italic"),
-                                    anchor="center", wraplength=680)
-            note_lbl.grid(row=2, column=0, columnspan=3, sticky="ew", padx=14, pady=(0, 10))
-            wrap_labels.append(note_lbl)
-        if wrap_labels:
-            self._attach_dynamic_wrap(card, *wrap_labels)
+    def _open_club(self, club_id):
+        if self.cur is None or club_id is None:
+            return
+        profile = fetch_club_profile(self.cur, club_id)
+        ClubProfileDialog(self, profile, self._colours)
 
 
 if __name__ == "__main__":
     if ctk is None:
         sys.exit("CustomTkinter is not installed. Run:  pip install customtkinter")
-    if not os.path.exists(DB_PATH):
-        sys.exit("european_football.db not found. Run:  python build_database.py")
     App().mainloop()

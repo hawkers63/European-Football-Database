@@ -21,7 +21,7 @@ Unseeded / seeded two-legged knockouts, from 1955 to the mid-1990s rebrands.
 - [ ] Continue the European Cup season by season (1961-62 onward).
 - [x] European Cup Winners' Cup inaugural **1960-61** seeded (Fiorentina).
 - [ ] Continue Cup Winners' Cup and add Inter-Cities Fairs Cup → UEFA Cup.
-- [ ] Optional viewer polish: a proper bracket view for pure knockout rounds.
+- [x] Optional viewer polish: a proper bracket view for pure knockout rounds.
 
 ## v2.0 — The Group Stage Era
 

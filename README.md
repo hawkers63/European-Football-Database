@@ -15,7 +15,8 @@ Stack: Python + CustomTkinter (UI) · SQLite (data, bundleable into a `.exe`).
 | `clubs.py` | Canonical club registry — one keyed entry per real club. |
 | `seasons.py` | Season fixtures, each tie tagged with RSSSF's printed aggregate. |
 | `build_database.py` | Builds `european_football.db`; **verifies** every aggregate before committing. |
-| `app.py` | The CustomTkinter viewer. |
+| `app.py` | The CustomTkinter viewer (fixtures list, tournament bracket, club profiles). |
+| `ui/` | Modular widgets, yearbook palette, and batched data loaders. |
 | `european_football.db` | Generated database (76 clubs, 112 ties, 228 matches). |
 | `ROADMAP.md`, `DATA_GUIDE.md`, `CHANGELOG.md` | Plan, how to add a season, history. |
 
