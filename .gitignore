@@ -1,0 +1,19 @@
+# Generated database — reproducible from build_database.py
+european_football.db
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Windows
+desktop.ini
+.pytest_cache/
+

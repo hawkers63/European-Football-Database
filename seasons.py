@@ -1,0 +1,405 @@
+# -*- coding: utf-8 -*-
+"""
+seasons.py — European Cup fixture data, Classic Era.
+
+Each season is a dict. Each tie carries RSSSF's own printed aggregate in `agg`
+so build_database.py can verify, automatically, that the individual legs entered
+here reproduce that total exactly. If a leg is mistyped, the build fails loudly
+rather than shipping a wrong scoreline.
+
+Leg format (a tuple):
+    (home_key, away_key, home_score, away_score)
+    (home_key, away_key, home_score, away_score, extras_dict)
+
+extras_dict may contain: "venue", "date" (ISO), "att", "ref", "aet" (True).
+
+Tie format (a dict):
+    t1, t2      club keys (t1 = first-named side / first-leg host)
+    win         winner club key (or None)
+    by          'aggregate' | 'replay' | 'coin_toss' | 'single_match' |
+                'walkover' | 'bye'
+    agg         (t1_goals, t2_goals) over legs 1 & 2 only — RSSSF's printed
+                aggregate. None for walkovers/byes with no legs.
+    legs        list of leg tuples (a 3rd leg is a play-off/replay)
+    note        optional string
+
+All results transcribed from RSSSF (James M. Ross's European competitions pages).
+"""
+
+# Short aliases so the leg tuples stay readable.
+def L(home, away, hs, as_, **extras):
+    return (home, away, hs, as_, extras) if extras else (home, away, hs, as_)
+
+
+SEASONS = [
+
+    # =====================================================================
+    # 1955-56 — inaugural season
+    # =====================================================================
+    {
+        "lineage": "European Cup", "season_label": "1955-56", "start_year": 1955,
+        "competition_name": "European Cup",
+        "winner": "real_madrid", "runner_up": "reims", "away_goals_active": False,
+        "notes": "Inaugural edition. 16 invited clubs. Away-goals rule not yet in use.",
+        "rounds": [
+            {"name": "First Round", "ties": [
+                {"t1": "servette", "t2": "real_madrid", "win": "real_madrid", "by": "aggregate", "agg": (0, 7),
+                 "legs": [L("servette", "real_madrid", 0, 2), L("real_madrid", "servette", 5, 0)]},
+                {"t1": "sporting_cp", "t2": "partizan", "win": "partizan", "by": "aggregate", "agg": (5, 8),
+                 "legs": [L("sporting_cp", "partizan", 3, 3), L("partizan", "sporting_cp", 5, 2)]},
+                {"t1": "rapid_wien", "t2": "psv", "win": "rapid_wien", "by": "aggregate", "agg": (6, 2),
+                 "legs": [L("rapid_wien", "psv", 6, 1), L("psv", "rapid_wien", 1, 0)]},
+                {"t1": "milan", "t2": "saarbrucken", "win": "milan", "by": "aggregate", "agg": (7, 5),
+                 "legs": [L("milan", "saarbrucken", 3, 4), L("saarbrucken", "milan", 1, 4)]},
+                {"t1": "rw_essen", "t2": "hibernian", "win": "hibernian", "by": "aggregate", "agg": (1, 5),
+                 "legs": [L("rw_essen", "hibernian", 0, 4), L("hibernian", "rw_essen", 1, 1)]},
+                {"t1": "djurgarden", "t2": "gwardia", "win": "djurgarden", "by": "aggregate", "agg": (4, 1),
+                 "legs": [L("djurgarden", "gwardia", 0, 0), L("gwardia", "djurgarden", 1, 4)]},
+                {"t1": "mtk", "t2": "anderlecht", "win": "mtk", "by": "aggregate", "agg": (10, 4),
+                 "legs": [L("mtk", "anderlecht", 6, 3), L("anderlecht", "mtk", 1, 4)],
+                 "note": "MTK competed as Vörös Lobogó this season."},
+                {"t1": "agf", "t2": "reims", "win": "reims", "by": "aggregate", "agg": (2, 4),
+                 "legs": [L("agf", "reims", 0, 2, venue="Copenhagen (1st leg relocated)"),
+                          L("reims", "agf", 2, 2)]},
+            ]},
+            {"name": "Quarter-Finals", "ties": [
+                {"t1": "real_madrid", "t2": "partizan", "win": "real_madrid", "by": "aggregate", "agg": (4, 3),
+                 "legs": [L("real_madrid", "partizan", 4, 0), L("partizan", "real_madrid", 3, 0)]},
+                {"t1": "rapid_wien", "t2": "milan", "win": "milan", "by": "aggregate", "agg": (3, 8),
+                 "legs": [L("rapid_wien", "milan", 1, 1), L("milan", "rapid_wien", 7, 2)]},
+                {"t1": "djurgarden", "t2": "hibernian", "win": "hibernian", "by": "aggregate", "agg": (1, 4),
+                 "legs": [L("djurgarden", "hibernian", 1, 3, venue="Glasgow, Firhill (1st leg relocated)"),
+                          L("hibernian", "djurgarden", 1, 0)]},
+                {"t1": "reims", "t2": "mtk", "win": "reims", "by": "aggregate", "agg": (8, 6),
+                 "legs": [L("reims", "mtk", 4, 2, venue="Paris"), L("mtk", "reims", 4, 4)]},
+            ]},
+            {"name": "Semi-Finals", "ties": [
+                {"t1": "real_madrid", "t2": "milan", "win": "real_madrid", "by": "aggregate", "agg": (5, 4),
+                 "legs": [L("real_madrid", "milan", 4, 2), L("milan", "real_madrid", 2, 1)]},
+                {"t1": "reims", "t2": "hibernian", "win": "reims", "by": "aggregate", "agg": (3, 0),
+                 "legs": [L("reims", "hibernian", 2, 0, venue="Paris"), L("hibernian", "reims", 0, 1)]},
+            ]},
+            {"name": "Final", "ties": [
+                {"t1": "real_madrid", "t2": "reims", "win": "real_madrid", "by": "single_match", "agg": (4, 3),
+                 "legs": [L("real_madrid", "reims", 4, 3, venue="Parc des Princes, Paris",
+                            date="1956-06-13", att=38239, ref="Arthur Ellis (England)")]},
+            ]},
+        ],
+    },
+
+    # =====================================================================
+    # 1956-57
+    # =====================================================================
+    {
+        "lineage": "European Cup", "season_label": "1956-57", "start_year": 1956,
+        "competition_name": "European Cup",
+        "winner": "real_madrid", "runner_up": "fiorentina", "away_goals_active": False,
+        "notes": "22 clubs. Level ties settled by a play-off on neutral ground.",
+        "rounds": [
+            {"name": "Preliminary Round", "ties": [
+                {"t1": "agf", "t2": "nice", "win": "nice", "by": "aggregate", "agg": (2, 6),
+                 "legs": [L("agf", "nice", 1, 1, venue="Copenhagen (1st leg relocated)"),
+                          L("nice", "agf", 5, 1)]},
+                {"t1": "porto", "t2": "bilbao", "win": "bilbao", "by": "aggregate", "agg": (3, 5),
+                 "legs": [L("porto", "bilbao", 1, 2), L("bilbao", "porto", 3, 2)]},
+                {"t1": "anderlecht", "t2": "man_utd", "win": "man_utd", "by": "aggregate", "agg": (0, 12),
+                 "legs": [L("anderlecht", "man_utd", 0, 2), L("man_utd", "anderlecht", 10, 0)]},
+                {"t1": "dortmund", "t2": "spora", "win": "dortmund", "by": "replay", "agg": (5, 5),
+                 "legs": [L("dortmund", "spora", 4, 3), L("spora", "dortmund", 2, 1),
+                          L("dortmund", "spora", 7, 0, venue="Dortmund (play-off)")]},
+                {"t1": "dinamo_buc", "t2": "galatasaray", "win": "dinamo_buc", "by": "aggregate", "agg": (4, 3),
+                 "legs": [L("dinamo_buc", "galatasaray", 3, 1), L("galatasaray", "dinamo_buc", 2, 1)]},
+                {"t1": "slovan", "t2": "cwks_warsaw", "win": "slovan", "by": "aggregate", "agg": (4, 2),
+                 "legs": [L("slovan", "cwks_warsaw", 4, 0), L("cwks_warsaw", "slovan", 2, 0)]},
+            ]},
+            {"name": "First Round", "ties": [
+                {"t1": "real_madrid", "t2": "rapid_wien", "win": "real_madrid", "by": "replay", "agg": (5, 5),
+                 "legs": [L("real_madrid", "rapid_wien", 4, 2), L("rapid_wien", "real_madrid", 3, 1),
+                          L("real_madrid", "rapid_wien", 2, 0, venue="Madrid (play-off)")]},
+                {"t1": "rangers", "t2": "nice", "win": "nice", "by": "replay", "agg": (3, 3),
+                 "legs": [L("rangers", "nice", 2, 1), L("nice", "rangers", 2, 1),
+                          L("rangers", "nice", 1, 3, venue="Paris (play-off)")]},
+                {"t1": "bilbao", "t2": "honved", "win": "bilbao", "by": "aggregate", "agg": (6, 5),
+                 "legs": [L("bilbao", "honved", 3, 2),
+                          L("honved", "bilbao", 3, 3, venue="Brussels (Honvéd home leg relocated)")]},
+                {"t1": "man_utd", "t2": "dortmund", "win": "man_utd", "by": "aggregate", "agg": (3, 2),
+                 "legs": [L("man_utd", "dortmund", 3, 2), L("dortmund", "man_utd", 0, 0)]},
+                {"t1": "rapid_jc", "t2": "red_star", "win": "red_star", "by": "aggregate", "agg": (3, 6),
+                 "legs": [L("rapid_jc", "red_star", 3, 4, venue="Kerkrade (1st leg)"),
+                          L("red_star", "rapid_jc", 2, 0)]},
+                {"t1": "cdna_sofia", "t2": "dinamo_buc", "win": "cdna_sofia", "by": "aggregate", "agg": (10, 4),
+                 "legs": [L("cdna_sofia", "dinamo_buc", 8, 1), L("dinamo_buc", "cdna_sofia", 3, 2)]},
+                {"t1": "slovan", "t2": "grasshopper", "win": "grasshopper", "by": "aggregate", "agg": (1, 2),
+                 "legs": [L("slovan", "grasshopper", 1, 0),
+                          L("grasshopper", "slovan", 2, 0, venue="Munich (2nd leg relocated)")]},
+                {"t1": "fiorentina", "t2": "ifk_norr", "win": "fiorentina", "by": "aggregate", "agg": (2, 1),
+                 "legs": [L("fiorentina", "ifk_norr", 1, 1),
+                          L("ifk_norr", "fiorentina", 0, 1, venue="Rome (2nd leg relocated)")]},
+            ]},
+            {"name": "Quarter-Finals", "ties": [
+                {"t1": "real_madrid", "t2": "nice", "win": "real_madrid", "by": "aggregate", "agg": (6, 2),
+                 "legs": [L("real_madrid", "nice", 3, 0), L("nice", "real_madrid", 2, 3)]},
+                {"t1": "bilbao", "t2": "man_utd", "win": "man_utd", "by": "aggregate", "agg": (5, 6),
+                 "legs": [L("bilbao", "man_utd", 5, 3), L("man_utd", "bilbao", 3, 0)]},
+                {"t1": "red_star", "t2": "cdna_sofia", "win": "red_star", "by": "aggregate", "agg": (4, 3),
+                 "legs": [L("red_star", "cdna_sofia", 3, 1), L("cdna_sofia", "red_star", 2, 1)]},
+                {"t1": "fiorentina", "t2": "grasshopper", "win": "fiorentina", "by": "aggregate", "agg": (5, 3),
+                 "legs": [L("fiorentina", "grasshopper", 3, 1), L("grasshopper", "fiorentina", 2, 2)]},
+            ]},
+            {"name": "Semi-Finals", "ties": [
+                {"t1": "real_madrid", "t2": "man_utd", "win": "real_madrid", "by": "aggregate", "agg": (5, 3),
+                 "legs": [L("real_madrid", "man_utd", 3, 1), L("man_utd", "real_madrid", 2, 2)]},
+                {"t1": "red_star", "t2": "fiorentina", "win": "fiorentina", "by": "aggregate", "agg": (0, 1),
+                 "legs": [L("red_star", "fiorentina", 0, 1), L("fiorentina", "red_star", 0, 0)]},
+            ]},
+            {"name": "Final", "ties": [
+                {"t1": "real_madrid", "t2": "fiorentina", "win": "real_madrid", "by": "single_match", "agg": (2, 0),
+                 "legs": [L("real_madrid", "fiorentina", 2, 0, venue="Estadio Santiago Bernabéu, Madrid",
+                            date="1957-05-30", att=124000, ref="Leo Horn (Netherlands)")]},
+            ]},
+        ],
+    },
+
+    # =====================================================================
+    # 1957-58
+    # =====================================================================
+    {
+        "lineage": "European Cup", "season_label": "1957-58", "start_year": 1957,
+        "competition_name": "European Cup",
+        "winner": "real_madrid", "runner_up": "milan", "away_goals_active": False,
+        "notes": "24 clubs. Manchester United's campaign overshadowed by the Munich air disaster.",
+        "rounds": [
+            {"name": "First Round", "ties": [
+                {"t1": "sevilla", "t2": "benfica", "win": "sevilla", "by": "aggregate", "agg": (3, 1),
+                 "legs": [L("sevilla", "benfica", 3, 1), L("benfica", "sevilla", 0, 0)]},
+                {"t1": "agf", "t2": "glenavon", "win": "agf", "by": "aggregate", "agg": (3, 0),
+                 "legs": [L("agf", "glenavon", 0, 0), L("glenavon", "agf", 0, 3, venue="Belfast (2nd leg)")]},
+                {"t1": "cdna_sofia", "t2": "vasas", "win": "vasas", "by": "aggregate", "agg": (3, 7),
+                 "legs": [L("cdna_sofia", "vasas", 2, 1), L("vasas", "cdna_sofia", 6, 1)]},
+                {"t1": "gwardia", "t2": "wismut", "win": "wismut", "by": "coin_toss", "agg": (4, 4),
+                 "legs": [L("gwardia", "wismut", 3, 1), L("wismut", "gwardia", 3, 1, venue="Aue (2nd leg)"),
+                          L("gwardia", "wismut", 1, 1, venue="East Berlin (play-off)")],
+                 "note": "Wismut progressed on the toss of a coin after the play-off finished level."},
+                {"t1": "shamrock", "t2": "man_utd", "win": "man_utd", "by": "aggregate", "agg": (2, 9),
+                 "legs": [L("shamrock", "man_utd", 0, 6), L("man_utd", "shamrock", 3, 2)]},
+                {"t1": "dudelange", "t2": "red_star", "win": "red_star", "by": "aggregate", "agg": (1, 14),
+                 "legs": [L("dudelange", "red_star", 0, 5, venue="Luxembourg City (1st leg)"),
+                          L("red_star", "dudelange", 9, 1)]},
+                {"t1": "rangers", "t2": "st_etienne", "win": "rangers", "by": "aggregate", "agg": (4, 3),
+                 "legs": [L("rangers", "st_etienne", 3, 1), L("st_etienne", "rangers", 2, 1)]},
+                {"t1": "milan", "t2": "rapid_wien", "win": "milan", "by": "replay", "agg": (6, 6),
+                 "legs": [L("milan", "rapid_wien", 4, 1), L("rapid_wien", "milan", 5, 2),
+                          L("milan", "rapid_wien", 4, 2, venue="Zürich (play-off)")]},
+            ]},
+            {"name": "Second Round", "ties": [
+                {"t1": "antwerp", "t2": "real_madrid", "win": "real_madrid", "by": "aggregate", "agg": (1, 8),
+                 "legs": [L("antwerp", "real_madrid", 1, 2), L("real_madrid", "antwerp", 6, 0)]},
+                {"t1": "sevilla", "t2": "agf", "win": "sevilla", "by": "aggregate", "agg": (4, 2),
+                 "legs": [L("sevilla", "agf", 4, 0), L("agf", "sevilla", 2, 0)]},
+                {"t1": "wismut", "t2": "ajax", "win": "ajax", "by": "aggregate", "agg": (1, 4),
+                 "legs": [L("wismut", "ajax", 1, 3, venue="Aue (1st leg)"), L("ajax", "wismut", 1, 0)]},
+                {"t1": "young_boys", "t2": "vasas", "win": "vasas", "by": "aggregate", "agg": (2, 3),
+                 "legs": [L("young_boys", "vasas", 1, 1, venue="Geneva (1st leg)"),
+                          L("vasas", "young_boys", 2, 1)]},
+                {"t1": "man_utd", "t2": "dukla", "win": "man_utd", "by": "aggregate", "agg": (3, 1),
+                 "legs": [L("man_utd", "dukla", 3, 0), L("dukla", "man_utd", 1, 0)]},
+                {"t1": "ifk_norr", "t2": "red_star", "win": "red_star", "by": "aggregate", "agg": (3, 4),
+                 "legs": [L("ifk_norr", "red_star", 2, 2), L("red_star", "ifk_norr", 2, 1)]},
+                {"t1": "dortmund", "t2": "cca_buc", "win": "dortmund", "by": "replay", "agg": (5, 5),
+                 "legs": [L("dortmund", "cca_buc", 4, 2), L("cca_buc", "dortmund", 3, 1),
+                          L("dortmund", "cca_buc", 3, 1, venue="Bologna (play-off)")]},
+                {"t1": "rangers", "t2": "milan", "win": "milan", "by": "aggregate", "agg": (1, 6),
+                 "legs": [L("rangers", "milan", 1, 4), L("milan", "rangers", 2, 0)]},
+            ]},
+            {"name": "Quarter-Finals", "ties": [
+                {"t1": "real_madrid", "t2": "sevilla", "win": "real_madrid", "by": "aggregate", "agg": (10, 2),
+                 "legs": [L("real_madrid", "sevilla", 8, 0), L("sevilla", "real_madrid", 2, 2)]},
+                {"t1": "ajax", "t2": "vasas", "win": "vasas", "by": "aggregate", "agg": (2, 6),
+                 "legs": [L("ajax", "vasas", 2, 2), L("vasas", "ajax", 4, 0)]},
+                {"t1": "man_utd", "t2": "red_star", "win": "man_utd", "by": "aggregate", "agg": (5, 4),
+                 "legs": [L("man_utd", "red_star", 2, 1), L("red_star", "man_utd", 3, 3)],
+                 "note": "The return in Belgrade was Manchester United's last match before the Munich air disaster."},
+                {"t1": "dortmund", "t2": "milan", "win": "milan", "by": "aggregate", "agg": (2, 5),
+                 "legs": [L("dortmund", "milan", 1, 1), L("milan", "dortmund", 4, 1)]},
+            ]},
+            {"name": "Semi-Finals", "ties": [
+                {"t1": "real_madrid", "t2": "vasas", "win": "real_madrid", "by": "aggregate", "agg": (4, 2),
+                 "legs": [L("real_madrid", "vasas", 4, 0), L("vasas", "real_madrid", 2, 0)]},
+                {"t1": "man_utd", "t2": "milan", "win": "milan", "by": "aggregate", "agg": (2, 5),
+                 "legs": [L("man_utd", "milan", 2, 1), L("milan", "man_utd", 4, 0)]},
+            ]},
+            {"name": "Final", "ties": [
+                {"t1": "real_madrid", "t2": "milan", "win": "real_madrid", "by": "single_match", "agg": (3, 2),
+                 "legs": [L("real_madrid", "milan", 3, 2, venue="Heysel Stadium, Brussels",
+                            date="1958-05-28", att=67000, ref="Alsteen (Belgium)", aet=True)]},
+            ]},
+        ],
+    },
+
+    # =====================================================================
+    # 1958-59
+    # =====================================================================
+    {
+        "lineage": "European Cup", "season_label": "1958-59", "start_year": 1958,
+        "competition_name": "European Cup",
+        "winner": "real_madrid", "runner_up": "reims", "away_goals_active": False,
+        "notes": "A qualifying round is added. Several ties settled by play-off.",
+        "rounds": [
+            {"name": "Qualifying Round", "ties": [
+                {"t1": "juventus", "t2": "wiener_sc", "win": "wiener_sc", "by": "aggregate", "agg": (3, 8),
+                 "legs": [L("juventus", "wiener_sc", 3, 1), L("wiener_sc", "juventus", 7, 0)]},
+                {"t1": "dinamo_zagreb", "t2": "dukla", "win": "dukla", "by": "aggregate", "agg": (3, 4),
+                 "legs": [L("dinamo_zagreb", "dukla", 2, 2), L("dukla", "dinamo_zagreb", 2, 1)]},
+                {"t1": "kb_copenhagen", "t2": "schalke", "win": "schalke", "by": "replay", "agg": (5, 5),
+                 "legs": [L("kb_copenhagen", "schalke", 3, 0), L("schalke", "kb_copenhagen", 5, 2),
+                          L("kb_copenhagen", "schalke", 1, 3, venue="Enschede (play-off)")]},
+                {"t1": "atletico", "t2": "drumcondra", "win": "atletico", "by": "aggregate", "agg": (13, 1),
+                 "legs": [L("atletico", "drumcondra", 8, 0), L("drumcondra", "atletico", 1, 5)]},
+                {"t1": "wismut", "t2": "petrolul", "win": "wismut", "by": "replay", "agg": (4, 4),
+                 "legs": [L("wismut", "petrolul", 4, 2, venue="Aue (1st leg)"),
+                          L("petrolul", "wismut", 2, 0),
+                          L("wismut", "petrolul", 4, 0, venue="Kiev (play-off)")]},
+                {"t1": "jeunesse", "t2": "ifk_gbg", "win": "ifk_gbg", "by": "replay", "agg": (2, 2),
+                 "legs": [L("jeunesse", "ifk_gbg", 1, 2), L("ifk_gbg", "jeunesse", 0, 1),
+                          L("jeunesse", "ifk_gbg", 1, 5, venue="Gothenburg (play-off)")]},
+                {"t1": "polonia", "t2": "mtk", "win": "mtk", "by": "aggregate", "agg": (0, 6),
+                 "legs": [L("polonia", "mtk", 0, 3), L("mtk", "polonia", 3, 0)]},
+                {"t1": "dos_utrecht", "t2": "sporting_cp", "win": "sporting_cp", "by": "aggregate", "agg": (4, 6),
+                 "legs": [L("dos_utrecht", "sporting_cp", 3, 4), L("sporting_cp", "dos_utrecht", 2, 1)]},
+                {"t1": "standard", "t2": "hearts", "win": "standard", "by": "aggregate", "agg": (6, 3),
+                 "legs": [L("standard", "hearts", 5, 1), L("hearts", "standard", 2, 1)]},
+                {"t1": "ards", "t2": "reims", "win": "reims", "by": "aggregate", "agg": (3, 10),
+                 "legs": [L("ards", "reims", 1, 4, venue="Belfast (1st leg)"), L("reims", "ards", 6, 2)]},
+                {"t1": "besiktas", "t2": "olympiakos", "win": "besiktas", "by": "walkover", "agg": None,
+                 "legs": [], "note": "Olympiakos withdrew."},
+                {"t1": "young_boys", "t2": "man_utd", "win": "young_boys", "by": "walkover", "agg": None,
+                 "legs": [], "note": "Manchester United withdrew following the Munich air disaster."},
+            ]},
+            {"name": "First Round", "ties": [
+                {"t1": "real_madrid", "t2": "besiktas", "win": "real_madrid", "by": "aggregate", "agg": (3, 1),
+                 "legs": [L("real_madrid", "besiktas", 2, 0), L("besiktas", "real_madrid", 1, 1)]},
+                {"t1": "wiener_sc", "t2": "dukla", "win": "wiener_sc", "by": "aggregate", "agg": (3, 2),
+                 "legs": [L("wiener_sc", "dukla", 3, 1), L("dukla", "wiener_sc", 1, 0)]},
+                {"t1": "wolves", "t2": "schalke", "win": "schalke", "by": "aggregate", "agg": (3, 4),
+                 "legs": [L("wolves", "schalke", 2, 2), L("schalke", "wolves", 2, 1)]},
+                {"t1": "atletico", "t2": "cdna_sofia", "win": "atletico", "by": "replay", "agg": (2, 2),
+                 "legs": [L("atletico", "cdna_sofia", 2, 1), L("cdna_sofia", "atletico", 1, 0),
+                          L("atletico", "cdna_sofia", 3, 1, venue="Geneva (play-off)", aet=True)]},
+                {"t1": "mtk", "t2": "young_boys", "win": "young_boys", "by": "aggregate", "agg": (2, 6),
+                 "legs": [L("mtk", "young_boys", 1, 2), L("young_boys", "mtk", 4, 1)]},
+                {"t1": "ifk_gbg", "t2": "wismut", "win": "wismut", "by": "aggregate", "agg": (2, 6),
+                 "legs": [L("ifk_gbg", "wismut", 2, 2), L("wismut", "ifk_gbg", 4, 0, venue="Aue (2nd leg)")]},
+                {"t1": "sporting_cp", "t2": "standard", "win": "standard", "by": "aggregate", "agg": (2, 6),
+                 "legs": [L("sporting_cp", "standard", 2, 3), L("standard", "sporting_cp", 3, 0)]},
+                {"t1": "reims", "t2": "hps_helsinki", "win": "reims", "by": "aggregate", "agg": (7, 0),
+                 "legs": [L("reims", "hps_helsinki", 4, 0),
+                          L("hps_helsinki", "reims", 0, 3, venue="Rouen (2nd leg relocated)")]},
+            ]},
+            {"name": "Quarter-Finals", "ties": [
+                {"t1": "wiener_sc", "t2": "real_madrid", "win": "real_madrid", "by": "aggregate", "agg": (1, 7),
+                 "legs": [L("wiener_sc", "real_madrid", 0, 0), L("real_madrid", "wiener_sc", 7, 1)]},
+                {"t1": "atletico", "t2": "schalke", "win": "atletico", "by": "aggregate", "agg": (4, 1),
+                 "legs": [L("atletico", "schalke", 3, 0), L("schalke", "atletico", 1, 1)]},
+                {"t1": "young_boys", "t2": "wismut", "win": "young_boys", "by": "replay", "agg": (2, 2),
+                 "legs": [L("young_boys", "wismut", 2, 2), L("wismut", "young_boys", 0, 0, venue="Aue (2nd leg)"),
+                          L("young_boys", "wismut", 2, 1, venue="Amsterdam (play-off)")]},
+                {"t1": "standard", "t2": "reims", "win": "reims", "by": "aggregate", "agg": (2, 3),
+                 "legs": [L("standard", "reims", 2, 0), L("reims", "standard", 3, 0)]},
+            ]},
+            {"name": "Semi-Finals", "ties": [
+                {"t1": "real_madrid", "t2": "atletico", "win": "real_madrid", "by": "replay", "agg": (2, 2),
+                 "legs": [L("real_madrid", "atletico", 2, 1), L("atletico", "real_madrid", 1, 0),
+                          L("real_madrid", "atletico", 2, 1, venue="Zaragoza (play-off)")]},
+                {"t1": "young_boys", "t2": "reims", "win": "reims", "by": "aggregate", "agg": (1, 3),
+                 "legs": [L("young_boys", "reims", 1, 0),
+                          L("reims", "young_boys", 3, 0, venue="Paris (2nd leg relocated)")]},
+            ]},
+            {"name": "Final", "ties": [
+                {"t1": "real_madrid", "t2": "reims", "win": "real_madrid", "by": "single_match", "agg": (2, 0),
+                 "legs": [L("real_madrid", "reims", 2, 0, venue="Neckarstadion, Stuttgart",
+                            date="1959-06-03", att=80000, ref="Albert Dusch (West Germany)")]},
+            ]},
+        ],
+    },
+
+    # =====================================================================
+    # 1959-60 — the 7-3 Hampden final
+    # =====================================================================
+    {
+        "lineage": "European Cup", "season_label": "1959-60", "start_year": 1959,
+        "competition_name": "European Cup",
+        "winner": "real_madrid", "runner_up": "eintracht", "away_goals_active": False,
+        "notes": "Real Madrid's fifth in a row, sealed by the 7-3 win over Eintracht Frankfurt at Hampden Park.",
+        "rounds": [
+            {"name": "Qualifying Round", "ties": [
+                {"t1": "jeunesse", "t2": "lks_lodz", "win": "jeunesse", "by": "aggregate", "agg": (6, 2),
+                 "legs": [L("jeunesse", "lks_lodz", 5, 0), L("lks_lodz", "jeunesse", 2, 1)]},
+                {"t1": "fenerbahce", "t2": "csepel", "win": "fenerbahce", "by": "aggregate", "agg": (4, 3),
+                 "legs": [L("fenerbahce", "csepel", 1, 1), L("csepel", "fenerbahce", 2, 3)]},
+                {"t1": "nice", "t2": "shamrock", "win": "nice", "by": "aggregate", "agg": (4, 3),
+                 "legs": [L("nice", "shamrock", 3, 2), L("shamrock", "nice", 1, 1)]},
+                {"t1": "vorwarts", "t2": "wolves", "win": "wolves", "by": "aggregate", "agg": (2, 3),
+                 "legs": [L("vorwarts", "wolves", 2, 1), L("wolves", "vorwarts", 2, 0)]},
+                {"t1": "olympiakos", "t2": "milan", "win": "milan", "by": "aggregate", "agg": (3, 5),
+                 "legs": [L("olympiakos", "milan", 2, 2), L("milan", "olympiakos", 3, 1)]},
+                {"t1": "cdna_sofia", "t2": "barcelona", "win": "barcelona", "by": "aggregate", "agg": (4, 8),
+                 "legs": [L("cdna_sofia", "barcelona", 2, 2), L("barcelona", "cdna_sofia", 6, 2)]},
+                {"t1": "rangers", "t2": "anderlecht", "win": "rangers", "by": "aggregate", "agg": (7, 2),
+                 "legs": [L("rangers", "anderlecht", 5, 2), L("anderlecht", "rangers", 0, 2)]},
+                {"t1": "slovan", "t2": "porto", "win": "slovan", "by": "aggregate", "agg": (4, 1),
+                 "legs": [L("slovan", "porto", 2, 1), L("porto", "slovan", 0, 2)],
+                 "note": "Slovan competed as ČH Bratislava this season."},
+                {"t1": "linfield", "t2": "ifk_gbg", "win": "ifk_gbg", "by": "aggregate", "agg": (3, 7),
+                 "legs": [L("linfield", "ifk_gbg", 2, 1), L("ifk_gbg", "linfield", 6, 1)]},
+                {"t1": "wiener_sc", "t2": "petrolul", "win": "wiener_sc", "by": "aggregate", "agg": (2, 1),
+                 "legs": [L("wiener_sc", "petrolul", 0, 0), L("petrolul", "wiener_sc", 1, 2)]},
+                {"t1": "eintracht", "t2": "kups", "win": "eintracht", "by": "walkover", "agg": None,
+                 "legs": [], "note": "KuPS Kuopio withdrew."},
+            ]},
+            {"name": "First Round", "ties": [
+                {"t1": "real_madrid", "t2": "jeunesse", "win": "real_madrid", "by": "aggregate", "agg": (12, 2),
+                 "legs": [L("real_madrid", "jeunesse", 7, 0),
+                          L("jeunesse", "real_madrid", 2, 5, venue="Luxembourg City (2nd leg relocated)")]},
+                {"t1": "fenerbahce", "t2": "nice", "win": "nice", "by": "replay", "agg": (3, 3),
+                 "legs": [L("fenerbahce", "nice", 2, 1), L("nice", "fenerbahce", 2, 1),
+                          L("fenerbahce", "nice", 1, 5, venue="Geneva (play-off)")]},
+                {"t1": "red_star", "t2": "wolves", "win": "wolves", "by": "aggregate", "agg": (1, 4),
+                 "legs": [L("red_star", "wolves", 1, 1), L("wolves", "red_star", 3, 0)]},
+                {"t1": "milan", "t2": "barcelona", "win": "barcelona", "by": "aggregate", "agg": (1, 7),
+                 "legs": [L("milan", "barcelona", 0, 2), L("barcelona", "milan", 5, 1)]},
+                {"t1": "rangers", "t2": "slovan", "win": "rangers", "by": "aggregate", "agg": (5, 4),
+                 "legs": [L("rangers", "slovan", 4, 3), L("slovan", "rangers", 1, 1)]},
+                {"t1": "sparta_rot", "t2": "ifk_gbg", "win": "sparta_rot", "by": "replay", "agg": (4, 4),
+                 "legs": [L("sparta_rot", "ifk_gbg", 3, 1), L("ifk_gbg", "sparta_rot", 3, 1),
+                          L("sparta_rot", "ifk_gbg", 3, 1, venue="Bremen (play-off)")]},
+                {"t1": "b1909_odense", "t2": "wiener_sc", "win": "wiener_sc", "by": "aggregate", "agg": (2, 5),
+                 "legs": [L("b1909_odense", "wiener_sc", 0, 3), L("wiener_sc", "b1909_odense", 2, 2)]},
+                {"t1": "young_boys", "t2": "eintracht", "win": "eintracht", "by": "aggregate", "agg": (2, 5),
+                 "legs": [L("young_boys", "eintracht", 1, 4), L("eintracht", "young_boys", 1, 1)]},
+            ]},
+            {"name": "Quarter-Finals", "ties": [
+                {"t1": "nice", "t2": "real_madrid", "win": "real_madrid", "by": "aggregate", "agg": (3, 6),
+                 "legs": [L("nice", "real_madrid", 3, 2), L("real_madrid", "nice", 4, 0)]},
+                {"t1": "barcelona", "t2": "wolves", "win": "barcelona", "by": "aggregate", "agg": (9, 2),
+                 "legs": [L("barcelona", "wolves", 4, 0), L("wolves", "barcelona", 2, 5)]},
+                {"t1": "sparta_rot", "t2": "rangers", "win": "rangers", "by": "replay", "agg": (3, 3),
+                 "legs": [L("sparta_rot", "rangers", 2, 3), L("rangers", "sparta_rot", 0, 1),
+                          L("sparta_rot", "rangers", 2, 3, venue="London, Highbury (play-off)")]},
+                {"t1": "eintracht", "t2": "wiener_sc", "win": "eintracht", "by": "aggregate", "agg": (3, 2),
+                 "legs": [L("eintracht", "wiener_sc", 2, 1), L("wiener_sc", "eintracht", 1, 1)]},
+            ]},
+            {"name": "Semi-Finals", "ties": [
+                {"t1": "real_madrid", "t2": "barcelona", "win": "real_madrid", "by": "aggregate", "agg": (6, 2),
+                 "legs": [L("real_madrid", "barcelona", 3, 1), L("barcelona", "real_madrid", 1, 3)]},
+                {"t1": "eintracht", "t2": "rangers", "win": "eintracht", "by": "aggregate", "agg": (12, 4),
+                 "legs": [L("eintracht", "rangers", 6, 1), L("rangers", "eintracht", 3, 6)]},
+            ]},
+            {"name": "Final", "ties": [
+                {"t1": "real_madrid", "t2": "eintracht", "win": "real_madrid", "by": "single_match", "agg": (7, 3),
+                 "legs": [L("real_madrid", "eintracht", 7, 3, venue="Hampden Park, Glasgow",
+                            date="1960-05-18", att=135000, ref="Jack Mowat (Scotland)")]},
+            ]},
+        ],
+    },
+
+]
