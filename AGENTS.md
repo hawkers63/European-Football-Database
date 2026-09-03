@@ -1,6 +1,6 @@
 # Autonomous Agent Task Directory (`AGENTS.md`)
 
-This repository contains three specialized agent task definitions located in the [`agents/`](file:///C:/EuroDatabase/agents/) directory. These task prompts are structured for immediate use by AI assistants (such as Grok Bots, Antigravity, or other LLM coding agents).
+This repository contains specialized agent task definitions located in the [`agents/`](file:///C:/EuroDatabase/agents/) directory. These task prompts are structured for immediate use by AI assistants (such as Grok Bots, Antigravity, or other LLM coding agents).
 
 ---
 
@@ -17,5 +17,9 @@ This repository contains three specialized agent task definitions located in the
 3. **UI/UX Desktop Application Specialist**: [`agents/ui_ux_developer.md`](file:///C:/EuroDatabase/agents/ui_ux_developer.md)
    * **Mission**: Overhaul the CustomTkinter desktop interface (`app.py`), implement an interactive knockout tournament bracket view, rich match cards with metadata pills, and club profile inspector.
    * **Recommended Execution**: Run third to build the modern UI upon the bug-free, expanded data layer.
+
+4. **GitHub Sync & Cloud Agent Orchestrator**: [`agents/github_sync_manager.md`](file:///C:/EuroDatabase/agents/github_sync_manager.md)
+   * **Mission**: Verify parity between local workspace (`C:\EuroDatabase`) and remote GitHub repository (`origin`). Directs Cloud Agents operating in GitHub environments to author and manage new agent specifications, GitHub Actions workflows, and issue templates directly at GitHub.
+   * **Recommended Execution**: Run before/after work and continuously to verify branch synchronization.
 
 For detailed documentation and the recommended sequencing graph, see [`agents/README.md`](file:///C:/EuroDatabase/agents/README.md).
