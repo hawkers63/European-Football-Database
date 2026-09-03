@@ -9,7 +9,7 @@ aggregate auto-calculated and the winner highlighted. A tournament bracket
 view sits alongside the fixtures list.
 
 Requirements:  pip install customtkinter
-Run:           python app.py   (run build_database.py first if the .db is missing)
+Run:           python app.py   (if the .db is missing, run: python build_database.py)
 """
 
 from __future__ import annotations

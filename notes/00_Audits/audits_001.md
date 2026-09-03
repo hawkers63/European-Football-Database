@@ -59,3 +59,9 @@ If the database is missing: `python build_database.py` then launch `app.py` agai
 - Match dates are still sparse outside finals (data gap, not a UI gap).
 - Light-mode custom colours are applied on toggle; a few native CTk chrome bits still follow the blue theme.
 - Concurrent untracked audit notes (`audits_002.md` onwards) from other agents were left untouched and are not part of this commit.
+
+## Landed on Hawkeye
+
+Date: 2026-09-03 22:40 BST (Europe/London)
+
+Modular viewer is now on `C:\EuroDatabase` (`feat/database-engineer` working tree). `app.py` is the 10,873-byte shell; `ui/` includes `data.py` and `bracket_view.py`; `tests/test_ui_overhaul.py` is present. pytest: 84 passed. Details: `audits_006.md`.
