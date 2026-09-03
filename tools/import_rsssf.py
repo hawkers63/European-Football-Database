@@ -96,9 +96,42 @@ LINE_RE = re.compile(
     r"(?P<flags>.*)$"
 )
 
+PLAYOFF_RE = re.compile(r"\[(\d+)-(\d+)\]")
+
+
+def _choose_leg_orientation(s1, s2, agg):
+    """Return (t2_home_hs, t2_home_as, reading) that reproduces `agg`.
+
+    Reading A (Ross summary): both columns are first-named home / first-named away,
+    so the second-named home scoreline is the reverse of column two.
+    Reading B: column two is already the second-named home scoreline (home-away).
+    """
+    ga_a = s1[0] + s2[0]
+    gb_a = s1[1] + s2[1]
+    ga_b = s1[0] + s2[1]
+    gb_b = s1[1] + s2[0]
+    if agg is not None:
+        if (ga_a, gb_a) == tuple(agg):
+            return s2[1], s2[0], "first-named-away"
+        if (ga_b, gb_b) == tuple(agg):
+            return s2[0], s2[1], "second-named-home"
+        return s2[1], s2[0], "first-named-away"
+    return s2[1], s2[0], "first-named-away"
+
+
+
 
 def _norm(name: str) -> str:
-    return re.sub(r"\s+", " ", name.strip().lower().replace(".", ""))
+    folded = name.strip().lower().replace(".", "")
+    for src, dst in (
+        ("\u00f6", "o"), ("\u00fc", "u"), ("\u00e4", "a"),
+        ("\u00e9", "e"), ("\u00e1", "a"), ("\u00f3", "o"),
+        ("\u00ed", "i"), ("\u00fa", "u"), ("\u00f8", "o"),
+        ("\u00e8", "e"), ("\u00e0", "a"), ("\u0151", "o"),
+        ("\u010d", "c"), ("\u0161", "s"), ("\u017e", "z"),
+    ):
+        folded = folded.replace(src, dst)
+    return re.sub(r"\s+", " ", folded)
 
 
 def match_club(name: str, cutoff: float = 0.72):
@@ -146,15 +179,23 @@ def parse_rsssf_line(line: str):
         return None
     s1 = tuple(map(int, scores[0]))
     s2 = tuple(map(int, scores[1]))
-    agg = tuple(map(int, scores[2])) if len(scores) >= 3 else (s1[0] + s2[1], s1[1] + s2[0])
+    agg = tuple(map(int, scores[2])) if len(scores) >= 3 else None
+
+    flags = m.group("flags").strip()
+    playoff = None
+    po = PLAYOFF_RE.search(flags)
+    if po:
+        playoff = (int(po.group(1)), int(po.group(2)))
+    elif len(scores) >= 4:
+        playoff = tuple(map(int, scores[3]))
+
+    t2_hs, t2_as, reading = _choose_leg_orientation(s1, s2, agg)
+    if agg is None:
+        agg = (s1[0] + t2_as, s1[1] + t2_hs)
 
     a_name, b_name = m.group("a").strip(), m.group("b").strip()
     a_key, a_conf = match_club(a_name)
     b_key, b_conf = match_club(b_name)
-    flags = m.group("flags").strip()
-    playoff = None
-    if len(scores) >= 4:
-        playoff = tuple(map(int, scores[3]))
 
     return {
         "type": "tie",
@@ -165,9 +206,10 @@ def parse_rsssf_line(line: str):
         "a_conf": a_conf,
         "b_conf": b_conf,
         "leg1": s1,
-        "leg2": s2,
+        "leg2_home": (t2_hs, t2_as),
         "agg": agg,
         "playoff": playoff,
+        "reading": reading,
         "flags": flags,
         "raw": raw,
     }
@@ -175,13 +217,12 @@ def parse_rsssf_line(line: str):
 
 def validate_aggregate(parsed) -> list:
     """Return problem strings if legs do not reproduce RSSSF aggregate."""
-    if parsed["type"] != "tie":
+    if parsed.get("type") != "tie":
         return []
     a1, b1 = parsed["leg1"]
-    a2, b2 = parsed["leg2"]
-    # RSSSF prints leg1 as t1-home, leg2 as t2-home, agg as t1-t2
-    ga = a1 + b2
-    gb = b1 + a2
+    t2_hs, t2_as = parsed["leg2_home"]
+    ga = a1 + t2_as
+    gb = b1 + t2_hs
     problems = []
     if (ga, gb) != tuple(parsed["agg"]):
         problems.append(
@@ -198,7 +239,7 @@ def emit_tie_block(parsed) -> str:
 
     a, b = parsed["a_key"] or "UNKNOWN_A", parsed["b_key"] or "UNKNOWN_B"
     a1, b1 = parsed["leg1"]
-    a2, b2 = parsed["leg2"]
+    t2_hs, t2_as = parsed["leg2_home"]
     ga, gb = parsed["agg"]
     if parsed["playoff"] is not None:
         by = "replay"
@@ -208,7 +249,7 @@ def emit_tie_block(parsed) -> str:
         win = a if ga > gb else (b if gb > ga else "None")
     legs = [
         'L("%s", "%s", %d, %d)' % (a, b, a1, b1),
-        'L("%s", "%s", %d, %d)' % (b, a, a2, b2),
+        'L("%s", "%s", %d, %d)' % (b, a, t2_hs, t2_as),
     ]
     if parsed["playoff"] is not None:
         p1, p2 = parsed["playoff"]
