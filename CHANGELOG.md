@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.2 - Period names, multi-lineage, CLI & RSSSF import
+- Additive `club_name_history` table with `get_club_display_name(club_id, edition_id)`
+  (MTK 1955-56 displays as *Vörös Lobogó*; later seasons stay *MTK Budapest*).
+- `LINEAGES` config (`lineages.py`) replaces the hardcoded European Cup lineage note;
+  Cup Winners' Cup and Inter-Cities Fairs Cup notes included.
+- Seeded European Cup **1960-61** (Benfica beat Barcelona) and inaugural
+  European Cup Winners' Cup **1960-61** (Fiorentina beat Rangers), from RSSSF.
+- Build verifies `by == 'away_goals'` when aggregates are level; pens columns
+  continue to be populated from leg extras.
+- New `cli.py` (`club`, `h2h`, `season`, `export --format json`) and
+  `tools/import_rsssf.py` for drafting season blocks from RSSSF text.
+
 ## v1.1 — Classic Era, five-in-a-row
 - Restructured seeding around a canonical club registry (`clubs.py`) keyed by
   short IDs, with fixtures in `seasons.py`. Adding a season is now one dict.

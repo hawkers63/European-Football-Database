@@ -1,0 +1,26 @@
+audits_000.txt — Database & Data Pipeline Engineer shipment
+Date: 2026-09-03 (Europe/London)
+
+Shipped
+-------
+1. club_name_history (additive schema) + CLUB_NAME_HISTORY in clubs.py
+   - get_club_display_name(club_id, edition_id) in queries.py
+   - MTK 1955-56 → Vörös Lobogó; other seasons → MTK Budapest
+   - Also structured: Slovan/CH Bratislava, Legia Warsaw 1960-61, CCA, Wismut
+
+2. Multi-lineage
+   - lineages.py LINEAGES config (European Cup, Cup Winners' Cup, Fairs Cup)
+   - European Cup 1960-61 (Benfica 3-2 Barcelona, RSSSF)
+   - Cup Winners' Cup 1960-61 (Fiorentina beat Rangers 4-1 agg, RSSSF)
+   - New clubs registered in clubs.py
+
+3. Pens / away_goals
+   - home_pens/away_pens already extracted from leg extras into match
+   - verify() now validates by=='away_goals' when aggregates are level
+
+4. tools/import_rsssf.py — RSSSF line parser → L() blocks, fuzzy match, agg check
+
+5. cli.py — club / h2h / season / export --format json
+
+Docs: CHANGELOG.md, DATA_GUIDE.md, ROADMAP.md updated.
+Tests: tests/test_display_names.py plus existing integrity suite.

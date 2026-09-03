@@ -47,6 +47,8 @@ Append a season dict. The two rules that keep it honest:
 | value          | meaning                                   | legs                          |
 |----------------|-------------------------------------------|-------------------------------|
 | `aggregate`    | two legs, higher aggregate wins           | 2                             |
+| `away_goals`   | level on aggregate, more away goals wins  | 2                             |
+| `penalties`    | settled on a shootout (`home_pens`/…)     | 2 (+ pens on deciding leg)    |
 | `replay`       | level, settled by a play-off              | 3 (3rd = play-off)            |
 | `coin_toss`    | level after play-off, decided on the toss | 3                             |
 | `single_match` | one match (e.g. the Final)                | 1                             |
@@ -71,3 +73,44 @@ printed totals."* If a leg is mistyped you'll get a line like:
 ```
 
 Fix the leg and rebuild. Nothing is written while a problem remains.
+
+
+## 4. Period club names  → `CLUB_NAME_HISTORY` in `clubs.py`
+
+Canonical modern names stay on `CLUBS`. When a club competed under a different
+name in a given season, add a structured history entry (do **not** rely on
+free-text notes alone):
+
+```python
+{
+  "club": "mtk",
+  "season_label": "1955-56",
+  "name_used": "Vörös Lobogó",
+  "notes": "Official name during the inaugural European Cup.",
+},
+```
+
+`build_database.py` writes these into `club_name_history`. Query with
+`queries.get_club_display_name(conn, club_id, edition_id)`.
+
+## 5. Lineages  → `lineages.py`
+
+New trophy threads need a `LINEAGES` note before you seed their first season:
+
+```python
+"European Cup Winners' Cup": "UEFA Cup Winners' Cup (1960-61 to 1998-99).",
+```
+
+## 6. CLI & RSSSF import
+
+```bash
+python cli.py club benfica
+python cli.py h2h benfica barcelona
+python cli.py season 1960-61
+python cli.py export 1960-61 --format json
+
+python tools/import_rsssf.py pasted_lines.txt --season 1961-62 --lineage "European Cup"
+```
+
+The importer fuzzy-matches club names, emits `L()` blocks, and refuses to print
+a season skeleton if leg totals disagree with the RSSSF aggregate.

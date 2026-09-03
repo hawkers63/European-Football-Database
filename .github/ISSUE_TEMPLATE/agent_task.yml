@@ -1,0 +1,52 @@
+name: Agent Task
+description: Dispatch a specialised agent brief against the European Football Database.
+title: "[agent]: "
+labels: ["agent-task"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        File a task for one of the specialised agents catalogued in [AGENTS.md](../../AGENTS.md).
+        Work must land on a feature branch. Do not force-push to `main`.
+  - type: dropdown
+    id: agent_role
+    attributes:
+      label: Agent role
+      description: Which specialised agent should take this task.
+      options:
+        - qa_auditor
+        - database_engineer
+        - ui_ux_developer
+        - github_sync_manager
+        - modern_era_parser
+        - ci_cd_guardian
+        - stats_analyst
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What should the agent accomplish?
+      placeholder: Parse the 1992-93 Champions League group stage without touching Classic Era golden data (1955-60).
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance criteria
+      description: Checklist the agent must satisfy before the pull request is ready.
+      placeholder: |
+        - [ ] python build_database.py --force succeeds
+        - [ ] python -m pytest tests -q passes
+        - [ ] Classic Era 1955-60 golden data is unchanged
+    validations:
+      required: true
+  - type: input
+    id: branch
+    attributes:
+      label: Branch
+      description: Feature branch to work on (never push to main).
+      placeholder: feat/database-engineer
+    validations:
+      required: true

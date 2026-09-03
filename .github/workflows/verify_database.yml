@@ -1,0 +1,13 @@
+name: Verify Database & Integrity
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt || pip install pytest customtkinter
+      - run: python build_database.py --force
+      - run: pytest tests/
