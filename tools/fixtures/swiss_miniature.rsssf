@@ -1,0 +1,21 @@
+# Miniature Swiss / league-phase listing for parser tests.
+# Not a full 36-club ingest. Points-for-a-win is an edition flag (--points-for-win 3).
+# Mid-season movement is recorded as data (Transfers block), not special-case code.
+
+League phase
+Matchday 1
+Real Madrid              (1) 2  Milan                    (0) 1
+FC Barcelona             (0) 1  SL Benfica               (0) 0
+
+Matchday 2
+Milan                    (0) 0  FC Barcelona             (1) 2
+SL Benfica               (0) 1  Real Madrid              (0) 1
+
+                           P  W  D  L  F  A Pts
+FC BARCELONA               2  2  0  0  3  0  6
+REAL MADRID                2  1  1  0  3  2  4
+SL Benfica                 2  0  1  1  1  2  1
+Milan                      2  0  0  2  1  4  0
+
+Transfers
+SL Benfica  rank=3  ->  UEFA Europa League  knockout_playoff  reason=league_phase_drop

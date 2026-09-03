@@ -84,6 +84,13 @@ ALIASES = {
     "ask vorwarts berlin": "vorwarts",
     "ask vorwärts berlin": "vorwarts",
     "vorwarts berlin": "vorwarts",
+    "uc sampdoria": "sampdoria",
+    "sparta prague": "sparta_prague",
+    "dinamo kiev": "dynamo_kyiv",
+    "dynamo kiev": "dynamo_kyiv",
+    "dynamo kyiv": "dynamo_kyiv",
+    "rsc anderlecht": "anderlecht",
+
 }
 
 

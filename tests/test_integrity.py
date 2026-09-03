@@ -243,12 +243,116 @@ class TestBuiltDatabase(unittest.TestCase):
         self.assertTrue(any("toss of a coin" in (n or "") for n in notes))
         self.assertTrue(any(n and "MTK competed as" in n for n in notes))
 
+    def test_additive_standings_schema_present(self):
+        tables = {r[0] for r in self.cur.execute(
+            "SELECT name FROM sqlite_master WHERE type IN ('table','view')")}
+        for name in ("standing_group", "standing_member", "standing_match",
+                     "competition_transfer", "v_standing_results"):
+            self.assertIn(name, tables)
+        ed_cols = {r["name"] for r in self.cur.execute("PRAGMA table_info(edition)")}
+        self.assertIn("points_for_win", ed_cols)
+        self.assertIn("standings_tiebreak", ed_cols)
+        rnd_cols = {r["name"] for r in self.cur.execute("PRAGMA table_info(round)")}
+        self.assertIn("phase_type", rnd_cols)
+
+    def test_1991_92_group_stage_seeded(self):
+        row = self.cur.execute(
+            "SELECT points_for_win, standings_tiebreak FROM edition WHERE season_label='1991-92'"
+        ).fetchone()
+        self.assertIsNotNone(row)
+        self.assertEqual(row["points_for_win"], 2)
+        n_groups = self.cur.execute("SELECT COUNT(*) FROM standing_group").fetchone()[0]
+        self.assertGreaterEqual(n_groups, 2)
+        n_matches = self.cur.execute("SELECT COUNT(*) FROM standing_match").fetchone()[0]
+        self.assertGreaterEqual(n_matches, 24)
+
     def test_edition_notes_and_runner_up_stored(self):
+
         row = self.cur.execute(
             "SELECT notes, runner_up_club_id FROM edition WHERE season_label='1959-60'"
         ).fetchone()
         self.assertTrue(row["notes"])
         self.assertIsNotNone(row["runner_up_club_id"])
+
+    def test_classic_editions_have_null_points_for_win(self):
+        rows = self.cur.execute(
+            """SELECT season_label, points_for_win FROM edition
+               WHERE season_label IN ('1955-56','1956-57','1957-58','1958-59','1959-60')
+                 AND competition_name = 'European Cup'"""
+        ).fetchall()
+        self.assertEqual(len(rows), 5)
+        for r in rows:
+            self.assertIsNone(r["points_for_win"], r["season_label"])
+
+    def test_1991_92_group_stage_stored(self):
+        row = self.cur.execute(
+            "SELECT points_for_win, standings_tiebreak FROM edition WHERE season_label='1991-92'"
+        ).fetchone()
+        self.assertIsNotNone(row)
+        self.assertEqual(row["points_for_win"], 2)
+        n_groups = self.cur.execute("SELECT COUNT(*) FROM standing_group").fetchone()[0]
+        self.assertGreaterEqual(n_groups, 2)
+        n_sm = self.cur.execute("SELECT COUNT(*) FROM standing_match").fetchone()[0]
+        self.assertGreaterEqual(n_sm, 24)
+
+
+
+GOLDEN_EUROPEAN_CUP = {
+    "1955-56": {"winner": "real_madrid", "runner_up": "reims", "ties": 15, "legs": 29,
+                "final_agg": (4, 3), "final_t2": "reims"},
+    "1956-57": {"winner": "real_madrid", "runner_up": "fiorentina", "ties": 21, "legs": 44,
+                "final_agg": (2, 0), "final_t2": "fiorentina"},
+    "1957-58": {"winner": "real_madrid", "runner_up": "milan", "ties": 23, "legs": 48,
+                "final_agg": (3, 2), "final_t2": "milan"},
+    "1958-59": {"winner": "real_madrid", "runner_up": "reims", "ties": 27, "legs": 55,
+                "final_agg": (2, 0), "final_t2": "reims"},
+    "1959-60": {"winner": "real_madrid", "runner_up": "eintracht", "ties": 26, "legs": 52,
+                "final_agg": (7, 3), "final_t2": "eintracht", "final_att": 135000},
+}
+
+
+def _european_cup(label):
+    matches = [s for s in SEASONS if s["lineage"] == "European Cup" and s["season_label"] == label]
+    if not matches:
+        raise AssertionError("missing European Cup %s" % label)
+    return matches[0]
+
+
+class TestGoldenClassicEra(unittest.TestCase):
+    """Lock Real Madrid's five-in-a-row so group/Swiss parsers cannot regress it."""
+
+    def test_champions_and_runners_up(self):
+        for label, exp in GOLDEN_EUROPEAN_CUP.items():
+            season = _european_cup(label)
+            self.assertEqual(season["winner"], exp["winner"], label)
+            self.assertEqual(season["runner_up"], exp["runner_up"], label)
+            self.assertFalse(season.get("groups"))
+            self.assertIsNone(season.get("points_for_win"))
+
+    def test_key_aggregates_and_counts(self):
+        for label, exp in GOLDEN_EUROPEAN_CUP.items():
+            season = _european_cup(label)
+            n_ties = sum(len(r.get("ties") or []) for r in season["rounds"])
+            n_legs = sum(len(t["legs"]) for r in season["rounds"] for t in r.get("ties") or [])
+            self.assertEqual(n_ties, exp["ties"], label)
+            self.assertEqual(n_legs, exp["legs"], label)
+            final = season["rounds"][-1]["ties"][0]
+            self.assertEqual(final["win"], "real_madrid", label)
+            self.assertEqual(final["t2"], exp["final_t2"], label)
+            self.assertEqual(tuple(final["agg"]), exp["final_agg"], label)
+
+    def test_hampden_1960_final_attendance(self):
+        season = _european_cup("1959-60")
+        leg = season["rounds"][-1]["ties"][0]["legs"][0]
+        extras = leg[4] if len(leg) > 4 else {}
+        self.assertEqual(extras.get("att"), 135000)
+        self.assertIn("Hampden", extras.get("venue") or "")
+
+    def test_notes_not_dropped(self):
+        s56 = _european_cup("1955-56")
+        self.assertIn("Inaugural", s56["notes"] or "")
+        s60 = _european_cup("1959-60")
+        self.assertIn("Hampden", s60["notes"] or "")
 
 
 if __name__ == "__main__":

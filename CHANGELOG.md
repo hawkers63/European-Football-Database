@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.3 - Group / Swiss phase foundations (additive)
+- Schema: dition.points_for_win, dition.standings_tiebreak, 
+ound.phase_type,
+  plus standing_group / standing_member / standing_match, competition_transfer,
+  and view _standing_results. Knockout 	ie / match unchanged.
+- 	ools/standings.py derives rankings from fixtures (2- or 3-point editions,
+  UEFA-style tie-breaks including head-to-head and Swiss strength-of-schedule).
+- Parsers: 	ools/parse_group_stage.py, 	ools/parse_swiss_phase.py, shared
+  	ools/phase_parse.py. Points-for-a-win is always an edition flag, never a year.
+  Parsers do not write the database.
+- Seeded 1991-92 European Cup group stage + final fragment (points_for_win=2).
+  Parser fixtures: 	ools/fixtures/cl_1991_92_groups.rsssf and
+  	ools/fixtures/swiss_miniature.rsssf.
+- Classic Era 1955-60 golden lock tests; group/Swiss parser tests.
+- Build populates the new columns/tables and verifies printed group tables.
+
 ## v1.2 - Period names, multi-lineage, CLI & RSSSF import
 - Additive `club_name_history` table with `get_club_display_name(club_id, edition_id)`
   (MTK 1955-56 displays as *Vörös Lobogó*; later seasons stay *MTK Budapest*).

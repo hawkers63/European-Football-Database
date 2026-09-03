@@ -2,7 +2,7 @@
 --  European Football Database — Schema v1.0  ("The Classic Era")
 --  Scope: unseeded / seeded two-legged knockouts, 1955 to the mid-1990s
 --  rebrands. Group stages and the Swiss league phase are DELIBERATELY
---  absent — they arrive in v2.0 and v3.0 as additive feature updates,
+--  ADDITIVE in v2.0 / v3.0 (tables below); never a rewrite of this foundation.
 --  never as a rewrite of this foundation.
 --
 --  Design principle: the STRUCTURE of a tournament is DATA, not code.
@@ -53,6 +53,8 @@ CREATE TABLE edition (
     runner_up_club_id INTEGER REFERENCES club(club_id),
     away_goals_active INTEGER NOT NULL DEFAULT 0, -- 0/1 flag for this season
     notes             TEXT,
+    points_for_win    INTEGER,   -- 2 or 3; NULL for knockout-only editions
+    standings_tiebreak TEXT,     -- comma-separated criteria; NULL if unused
     UNIQUE (lineage_id, start_year)
 );
 
@@ -65,6 +67,7 @@ CREATE TABLE round (
     edition_id  INTEGER NOT NULL REFERENCES edition(edition_id),
     name        TEXT    NOT NULL,        -- 'First Round','Quarter-Finals','Final'
     round_order INTEGER NOT NULL,
+    phase_type  TEXT    NOT NULL DEFAULT 'knockout', -- knockout | group | league
     UNIQUE (edition_id, round_order)
 );
 
@@ -135,3 +138,82 @@ CREATE TABLE club_name_history (
 );
 CREATE INDEX idx_club_name_edition ON club_name_history(club_id, edition_id);
 
+
+-- ---------------------------------------------------------------------
+-- v2.0 / v3.0 additive tables. Knockout tie/match rows are unchanged.
+-- A standings phase is linked to a round (phase_type = 'group' or 'league').
+-- Rankings are derived from standing_match; they are not stored as a table.
+-- ---------------------------------------------------------------------
+
+-- standing_group: one named group (Group A) or a single Swiss league phase.
+CREATE TABLE standing_group (
+    group_id     INTEGER PRIMARY KEY,
+    round_id     INTEGER NOT NULL REFERENCES round(round_id),
+    name         TEXT    NOT NULL,        -- 'Group A' / 'League phase'
+    group_order  INTEGER NOT NULL,
+    UNIQUE (round_id, group_order)
+);
+
+-- standing_member: clubs that belong to the group / league phase.
+CREATE TABLE standing_member (
+    member_id INTEGER PRIMARY KEY,
+    group_id  INTEGER NOT NULL REFERENCES standing_group(group_id),
+    club_id   INTEGER NOT NULL REFERENCES club(club_id),
+    UNIQUE (group_id, club_id)
+);
+
+-- standing_match: group / league-phase fixtures. Not a knockout tie.
+-- Unplayed matches keep NULL scores (incomplete groups). Awarded/walkover
+-- results set awarded=1 and record the scoreline as published (often 3-0).
+CREATE TABLE standing_match (
+    match_id           INTEGER PRIMARY KEY,
+    group_id           INTEGER NOT NULL REFERENCES standing_group(group_id),
+    matchday           INTEGER,
+    match_date         TEXT,
+    home_club_id       INTEGER NOT NULL REFERENCES club(club_id),
+    away_club_id       INTEGER NOT NULL REFERENCES club(club_id),
+    home_score         INTEGER,
+    away_score         INTEGER,
+    awarded            INTEGER NOT NULL DEFAULT 0,  -- 0/1 walkover or awarded
+    walkover_winner_id INTEGER REFERENCES club(club_id),
+    venue              TEXT,
+    attendance         INTEGER,
+    referee            TEXT,
+    notes              TEXT
+);
+
+-- competition_transfer: mid-season movement between trophy lines
+-- (e.g. a third-placed group club dropping into the UEFA Cup / Europa League).
+-- Stored as data so the application never special-cases a calendar year.
+CREATE TABLE competition_transfer (
+    transfer_id     INTEGER PRIMARY KEY,
+    club_id         INTEGER NOT NULL REFERENCES club(club_id),
+    from_edition_id INTEGER NOT NULL REFERENCES edition(edition_id),
+    from_round_id   INTEGER REFERENCES round(round_id),
+    from_rank       INTEGER,
+    to_edition_id   INTEGER NOT NULL REFERENCES edition(edition_id),
+    to_round_id     INTEGER REFERENCES round(round_id),
+    reason          TEXT NOT NULL,        -- e.g. 'group_third', 'league_phase_drop'
+    notes           TEXT
+);
+
+CREATE INDEX idx_standing_group_round ON standing_group(round_id);
+CREATE INDEX idx_standing_member_group ON standing_member(group_id);
+CREATE INDEX idx_standing_match_group ON standing_match(group_id);
+CREATE INDEX idx_transfer_from ON competition_transfer(from_edition_id);
+CREATE INDEX idx_transfer_to ON competition_transfer(to_edition_id);
+
+-- Derived counting view (points still need edition.points_for_win in the app).
+-- This is not a ranking: sort order is applied in tools/standings.py.
+CREATE VIEW v_standing_results AS
+SELECT
+    sm.group_id,
+    sm.match_id,
+    sm.matchday,
+    sm.home_club_id,
+    sm.away_club_id,
+    sm.home_score,
+    sm.away_score,
+    sm.awarded,
+    sm.walkover_winner_id
+FROM standing_match sm;

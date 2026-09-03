@@ -58,13 +58,26 @@ def collect_referenced_keys(seasons=None):
             if k:
                 keys.add(k)
         for rnd in s["rounds"]:
-            for tie in rnd["ties"]:
+            for tie in rnd.get("ties") or []:
                 keys.add(tie["t1"]); keys.add(tie["t2"])
                 if tie["win"]:
                     keys.add(tie["win"])
                 for leg in tie["legs"]:
                     h, a, _, _, _ = leg_fields(leg)
                     keys.add(h); keys.add(a)
+            for group in rnd.get("groups") or []:
+                for k in group.get("clubs") or []:
+                    keys.add(k)
+                for m in group.get("matches") or []:
+                    if m.get("home"):
+                        keys.add(m["home"])
+                    if m.get("away"):
+                        keys.add(m["away"])
+                    if m.get("walkover_winner"):
+                        keys.add(m["walkover_winner"])
+        for tr in s.get("transfers") or []:
+            if tr.get("club"):
+                keys.add(tr["club"])
     return keys
 
 
@@ -120,25 +133,33 @@ def build(force=False):
 
     # ---- editions / rounds / ties / matches -------------------------------
     edition_ids = {}  # (lineage_name, season_label) -> edition_id
+    round_ids = {}    # (lineage_name, season_label, round_name) -> round_id
     for s in SEASONS:
         cur.execute(
             """INSERT INTO edition
                (lineage_id, season_label, start_year, competition_name,
-                winner_club_id, runner_up_club_id, away_goals_active, notes)
-               VALUES (?,?,?,?,?,?,?,?)""",
+                winner_club_id, runner_up_club_id, away_goals_active, notes,
+                points_for_win, standings_tiebreak)
+               VALUES (?,?,?,?,?,?,?,?,?,?)""",
             (lineage_id[s["lineage"]], s["season_label"], s["start_year"],
              s["competition_name"],
              club_id.get(s["winner"]), club_id.get(s["runner_up"]),
-             1 if s["away_goals_active"] else 0, s.get("notes")))
+             1 if s["away_goals_active"] else 0, s.get("notes"),
+             s.get("points_for_win"), s.get("standings_tiebreak")))
         edition_id = cur.lastrowid
         edition_ids[(s["lineage"], s["season_label"])] = edition_id
 
         for order, rnd in enumerate(s["rounds"], start=1):
-            cur.execute("INSERT INTO round (edition_id, name, round_order) VALUES (?,?,?)",
-                        (edition_id, rnd["name"], order))
+            phase_type = rnd.get("phase_type") or "knockout"
+            cur.execute(
+                "INSERT INTO round (edition_id, name, round_order, phase_type) VALUES (?,?,?,?)",
+                (edition_id, rnd["name"], order, phase_type))
             round_id = cur.lastrowid
+            round_ids[(s["lineage"], s["season_label"], rnd["name"])] = round_id
 
-            for tie in rnd["ties"]:
+            insert_standing_groups(cur, club_id, round_id, rnd)
+
+            for tie in rnd.get("ties") or []:
                 cur.execute(
                     """INSERT INTO tie (round_id, club_a_id, club_b_id, winner_club_id, decided_by, notes)
                        VALUES (?,?,?,?,?,?)""",
@@ -178,6 +199,27 @@ def build(force=False):
                 (club_id[key], None, season_label, entry["name_used"], entry.get("notes")),
             )
 
+    # ---- competition_transfer (mid-season movement between trophy lines)
+    for s in SEASONS:
+        from_eid = edition_ids[(s["lineage"], s["season_label"])]
+        for tr in s.get("transfers") or []:
+            to_lin = tr.get("to_lineage")
+            to_lab = tr.get("to_season_label") or s["season_label"]
+            to_eid = edition_ids.get((to_lin, to_lab)) if to_lin else None
+            if to_eid is None:
+                print("WARNING: skipping transfer %s; destination edition not seeded (%s %s)."
+                      % (tr.get("club"), to_lin, to_lab))
+                continue
+            from_rid = round_ids.get((s["lineage"], s["season_label"], tr["from_round"])) if tr.get("from_round") else None
+            to_rid = round_ids.get((to_lin, to_lab, tr["to_round"])) if tr.get("to_round") else None
+            cur.execute(
+                """INSERT INTO competition_transfer
+                   (club_id, from_edition_id, from_round_id, from_rank,
+                    to_edition_id, to_round_id, reason, notes)
+                   VALUES (?,?,?,?,?,?,?,?)""",
+                (club_id[tr["club"]], from_eid, from_rid, tr.get("from_rank"),
+                 to_eid, to_rid, tr.get("reason") or "group_third", tr.get("notes")))
+
     # ---- VERIFY before committing -----------------------------------------
     problems = verify(cur, club_id)
     if problems:
@@ -191,12 +233,85 @@ def build(force=False):
     return 0
 
 
+def insert_standing_groups(cur, club_id, round_id, rnd):
+    """Persist additive group / league-phase rows for one round."""
+    for order, group in enumerate(rnd.get("groups") or [], start=1):
+        cur.execute(
+            "INSERT INTO standing_group (round_id, name, group_order) VALUES (?,?,?)",
+            (round_id, group["name"], order))
+        group_id = cur.lastrowid
+        members = list(group.get("clubs") or [])
+        for m in group.get("matches") or []:
+            for k in (m.get("home"), m.get("away")):
+                if k and k not in members:
+                    members.append(k)
+        for key in members:
+            cur.execute(
+                "INSERT INTO standing_member (group_id, club_id) VALUES (?,?)",
+                (group_id, club_id[key]))
+        for m in group.get("matches") or []:
+            if not m.get("home") or not m.get("away"):
+                continue
+            walkover_id = club_id.get(m["walkover_winner"]) if m.get("walkover_winner") else None
+            cur.execute(
+                """INSERT INTO standing_match
+                   (group_id, matchday, match_date, home_club_id, away_club_id,
+                    home_score, away_score, awarded, walkover_winner_id,
+                    venue, attendance, referee, notes)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (group_id, m.get("matchday"), m.get("date"),
+                 club_id[m["home"]], club_id[m["away"]],
+                 m.get("hs"), m.get("as"),
+                 1 if m.get("awarded") else 0, walkover_id,
+                 m.get("venue"), m.get("att"), m.get("ref"), m.get("note")))
+
+
+def verify_standings(season):
+    """Check printed group tables against fixtures using the edition flag."""
+    from tools.standings import rank_table, tables_match
+    problems = []
+    pf = season.get("points_for_win")
+    tb = season.get("standings_tiebreak")
+    for rnd in season["rounds"]:
+        groups = rnd.get("groups") or []
+        if not groups:
+            continue
+        if pf not in (2, 3):
+            problems.append(
+                "!! PTS  %s %s: group/league phase requires points_for_win 2 or 3 (got %r)"
+                % (season["season_label"], rnd["name"], pf))
+            continue
+        for group in groups:
+            clubs = list(group.get("clubs") or [])
+            matches = group.get("matches") or []
+            for m in matches:
+                if m.get("hs") is None or m.get("as") is None:
+                    continue
+                if m.get("home") not in clubs or m.get("away") not in clubs:
+                    problems.append(
+                        "!! GRP  %s %s %s: %s v %s not in group clubs"
+                        % (season["season_label"], rnd["name"], group["name"],
+                           m.get("home"), m.get("away")))
+            computed = rank_table(clubs, matches, pf, tb)
+            printed = group.get("table") or []
+            if printed:
+                tag = "%s %s %s" % (season["season_label"], rnd["name"], group["name"])
+                for msg in tables_match(computed, printed):
+                    problems.append("!! TABLE %s: %s" % (tag, msg))
+    return problems
+
+
 def verify(cur, club_id, seasons=None):
-    """Recompute each tie's aggregate from its legs and check it against `agg`."""
+    """Recompute each tie's aggregate from its legs and check it against `agg`.
+
+    Group / league-phase tables are checked against printed standings when
+    supplied. Classic Era knockout seasons have no groups and are unchanged.
+    """
     problems = []
     for s in (SEASONS if seasons is None else seasons):
+        problems.extend(verify_standings(s))
         for rnd in s["rounds"]:
-            for tie in rnd["ties"]:
+            for tie in rnd.get("ties") or []:
                 a, b = tie["t1"], tie["t2"]
                 ga = gb = 0
                 tag = f'{s["season_label"]} {rnd["name"]}: {a} v {b}'
@@ -243,7 +358,8 @@ def verify(cur, club_id, seasons=None):
 
 def report(cur):
     counts = {t: cur.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
-              for t in ("lineage", "club", "club_name_history", "edition", "round", "tie", "match")}
+              for t in ("lineage", "club", "club_name_history", "edition", "round", "tie", "match",
+                        "standing_group", "standing_member", "standing_match", "competition_transfer")}
     print(f"Built {DB_PATH}")
     print("  " + ", ".join(f"{k}={v}" for k, v in counts.items()))
     print("  All aggregates verified against RSSSF printed totals.")

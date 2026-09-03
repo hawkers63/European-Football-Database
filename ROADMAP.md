@@ -28,18 +28,15 @@ Unseeded / seeded two-legged knockouts, from 1955 to the mid-1990s rebrands.
 Once the knockout data is broad and solid, add group phases as an **additive**
 feature — no change to existing tables.
 
-- [ ] A `standings` phase type linked to a round.
-- [ ] A per-competition flag for **2 points vs 3 points for a win** (the switch
-      happened in the early 1990s; store it, don't hardcode a year).
-- [ ] Group-table sorting: points, goal difference, head-to-head.
+- [x] A `standings` phase type linked to a round (`round.phase_type` + `standing_group` / `standing_member` / `standing_match`).
+- [x] A per-competition flag for **2 points vs 3 points for a win** (`edition.points_for_win`; store it, don't hardcode a year).
+- [x] Group-table sorting: points, goal difference, head-to-head (`tools/standings.py` + `edition.standings_tiebreak`).
 - [ ] Viewer: render league tables alongside the existing bracket/fixture views.
 
 ## v3.0 — The Modern Era
 
-- [ ] The Swiss single-league phase (36 teams, eight opponents), sortable by the
-      current UEFA tiebreakers.
-- [ ] Mid-season movement between competitions (e.g. third-placed Champions
-      League clubs dropping into the Europa League).
+- [x] Swiss / league-phase **schema + parser + miniature sample** (full 36-club ingest still outstanding).
+- [x] Mid-season movement between competitions as data (`competition_transfer`; full multi-lineage seeding still outstanding).
 - [ ] Away-goals handling driven entirely by the per-season flag already in the
       schema (rule introduced 1965-66, abolished 2021).
 

@@ -534,4 +534,78 @@ SEASONS = [
         ],
     },
 
+    # =====================================================================
+    # 1991-92 - first Champions League group stage (fragment)
+    # Knockout rounds before the groups are not seeded here. Classic Era
+    # 1955-60 is untouched. Points-for-a-win is an edition flag (2), not a
+    # calendar-year rule; UEFA later switched the competition to 3.
+    # Results: RSSSF, James M. Ross, Champions' Cup 1991-92.
+    # =====================================================================
+    {
+        "lineage": "European Cup", "season_label": "1991-92", "start_year": 1991,
+        "competition_name": "European Cup",
+        "winner": "barcelona", "runner_up": "sampdoria", "away_goals_active": False,
+        "points_for_win": 2,
+        "standings_tiebreak": "points,goal_difference,goals_scored,head_to_head",
+        "notes": "First Champions League group stage (two groups of four). "
+                 "2 points for a win stored on the edition. Group stage and "
+                 "final only; first and second knockout rounds not yet seeded.",
+        "rounds": [
+            {"name": "Group Stage", "phase_type": "group", "ties": [], "groups": [
+                {"name": "Group A",
+                 "clubs": ["sampdoria", "red_star", "anderlecht", "panathinaikos"],
+                 "matches": [
+                    {"home": "sampdoria", "away": "red_star", "hs": 2, "as": 0},
+                    {"home": "anderlecht", "away": "panathinaikos", "hs": 0, "as": 0},
+                    {"home": "panathinaikos", "away": "sampdoria", "hs": 0, "as": 0},
+                    {"home": "red_star", "away": "anderlecht", "hs": 3, "as": 2,
+                     "venue": "Budapest", "note": "in Budapest"},
+                    {"home": "panathinaikos", "away": "red_star", "hs": 0, "as": 2},
+                    {"home": "anderlecht", "away": "sampdoria", "hs": 3, "as": 2},
+                    {"home": "sampdoria", "away": "anderlecht", "hs": 2, "as": 0},
+                    {"home": "red_star", "away": "panathinaikos", "hs": 1, "as": 0,
+                     "venue": "Sofia", "note": "in Sofia"},
+                    {"home": "panathinaikos", "away": "anderlecht", "hs": 0, "as": 0},
+                    {"home": "red_star", "away": "sampdoria", "hs": 1, "as": 3,
+                     "venue": "Sofia", "note": "in Sofia"},
+                    {"home": "anderlecht", "away": "red_star", "hs": 3, "as": 2},
+                    {"home": "sampdoria", "away": "panathinaikos", "hs": 1, "as": 1},
+                 ],
+                 "table": [
+                    {"club": "sampdoria", "played": 6, "w": 3, "d": 2, "l": 1, "gf": 10, "ga": 5, "pts": 8},
+                    {"club": "red_star", "played": 6, "w": 3, "d": 0, "l": 3, "gf": 9, "ga": 10, "pts": 6},
+                    {"club": "anderlecht", "played": 6, "w": 2, "d": 2, "l": 2, "gf": 8, "ga": 9, "pts": 6},
+                    {"club": "panathinaikos", "played": 6, "w": 0, "d": 4, "l": 2, "gf": 1, "ga": 4, "pts": 4},
+                 ]},
+                {"name": "Group B",
+                 "clubs": ["barcelona", "sparta_prague", "benfica", "dynamo_kyiv"],
+                 "matches": [
+                    {"home": "barcelona", "away": "sparta_prague", "hs": 3, "as": 2},
+                    {"home": "dynamo_kyiv", "away": "benfica", "hs": 1, "as": 0},
+                    {"home": "sparta_prague", "away": "dynamo_kyiv", "hs": 2, "as": 1},
+                    {"home": "benfica", "away": "barcelona", "hs": 0, "as": 0},
+                    {"home": "dynamo_kyiv", "away": "barcelona", "hs": 0, "as": 2},
+                    {"home": "benfica", "away": "sparta_prague", "hs": 1, "as": 1},
+                    {"home": "sparta_prague", "away": "benfica", "hs": 1, "as": 1},
+                    {"home": "barcelona", "away": "dynamo_kyiv", "hs": 3, "as": 0},
+                    {"home": "sparta_prague", "away": "barcelona", "hs": 1, "as": 0},
+                    {"home": "benfica", "away": "dynamo_kyiv", "hs": 5, "as": 0},
+                    {"home": "dynamo_kyiv", "away": "sparta_prague", "hs": 1, "as": 0},
+                    {"home": "barcelona", "away": "benfica", "hs": 2, "as": 1},
+                 ],
+                 "table": [
+                    {"club": "barcelona", "played": 6, "w": 4, "d": 1, "l": 1, "gf": 10, "ga": 4, "pts": 9},
+                    {"club": "sparta_prague", "played": 6, "w": 2, "d": 2, "l": 2, "gf": 7, "ga": 7, "pts": 6},
+                    {"club": "benfica", "played": 6, "w": 1, "d": 3, "l": 2, "gf": 8, "ga": 5, "pts": 5},
+                    {"club": "dynamo_kyiv", "played": 6, "w": 2, "d": 0, "l": 4, "gf": 3, "ga": 12, "pts": 4},
+                 ]},
+            ]},
+            {"name": "Final", "phase_type": "knockout", "ties": [
+                {"t1": "barcelona", "t2": "sampdoria", "win": "barcelona", "by": "single_match", "agg": (1, 0),
+                 "legs": [L("barcelona", "sampdoria", 1, 0, venue="Wembley Stadium, London",
+                            date="1992-05-20", att=70827, ref="Aron Schmidhuber (Germany)", aet=True)]},
+            ]},
+        ],
+    },
+
 ]

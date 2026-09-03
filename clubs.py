@@ -141,6 +141,12 @@ CLUBS = {
                       "notes": "Listed by RSSSF as FC Lucerne."},
     "austria_wien":  {"name": "FK Austria Wien",      "country": "AUT", "city": "Vienna"},
     "gladbach":      {"name": "Borussia Mönchengladbach", "country": "FRG", "city": "Mönchengladbach"},
+    # --- added 1991-92 European Cup group stage -----------------------------
+    "sampdoria":     {"name": "UC Sampdoria", "country": "ITA", "city": "Genoa"},
+    "sparta_prague": {"name": "Sparta Prague", "country": "TCH", "city": "Prague"},
+    "dynamo_kyiv":   {"name": "Dynamo Kyiv", "country": "URS", "city": "Kyiv",
+                    "notes": "Listed by RSSSF as Dinamo Kiev."},
+
 }
 
 

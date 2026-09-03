@@ -114,3 +114,71 @@ python tools/import_rsssf.py pasted_lines.txt --season 1961-62 --lineage "Europe
 
 The importer fuzzy-matches club names, emits `L()` blocks, and refuses to print
 a season skeleton if leg totals disagree with the RSSSF aggregate.
+
+
+## 7. Group stages and Swiss league phases
+
+Group and Swiss (league-phase) fixtures are **additive**. Knockout `tie` /
+`match` rows stay as they are. Rankings are **always derived** from fixtures via
+`tools/standings.py` — never stored as a ranking table.
+
+### Edition flags (data, not calendar years)
+
+| field | meaning |
+|-------|---------|
+| `points_for_win` | `2` or `3`. NULL on knockout-only editions. **Never** infer from the season label. |
+| `standings_tiebreak` | Comma-separated criteria (e.g. `points,goal_difference,goals_scored,head_to_head`). |
+
+### Round shape
+
+```python
+{"name": "Group Stage", "phase_type": "group", "ties": [], "groups": [
+  {"name": "Group A", "clubs": ["sampdoria", "red_star", "..."],
+   "matches": [
+     {"home": "sampdoria", "away": "red_star", "hs": 2, "as": 0},
+   ],
+   "table": [  # optional printed RSSSF table for build-time verify
+     {"club": "sampdoria", "played": 6, "w": 3, "d": 2, "l": 1,
+      "gf": 10, "ga": 5, "pts": 8},
+   ]},
+]},
+```
+
+Use `"phase_type": "league"` for a Swiss / single-table league phase (one
+`standing_group`, often named `"League phase"`).
+
+### Mid-season movement
+
+Cross-competition drops (e.g. group third → UEFA Cup / Europa League) are rows
+in `competition_transfer`, seeded from a season's optional `transfers` list:
+
+```python
+"transfers": [
+  {"club": "benfica", "from_rank": 3, "from_round": "Group Stage",
+   "to_lineage": "UEFA Cup", "to_season_label": "1991-92",
+   "to_round": "First Round", "reason": "group_third"},
+],
+```
+
+The destination edition must already be seeded or the build skips with a warning.
+
+### Parser tools (do not write the database)
+
+```bash
+python tools/parse_group_stage.py tools/fixtures/cl_1991_92_groups.rsssf \
+    --season 1991-92 --points-for-win 2 --dry-run
+
+python tools/parse_swiss_phase.py tools/fixtures/swiss_miniature.rsssf \
+    --season 2024-25 --points-for-win 3 --dry-run
+```
+
+Paste the printed fragment into `seasons.py`, register any new club keys, then:
+
+```bash
+python build_database.py --force
+```
+
+Representative fixture: `tools/fixtures/cl_1991_92_groups.rsssf` (1991-92 first
+Champions League groups, 2 points for a win). Miniature Swiss sample:
+`tools/fixtures/swiss_miniature.rsssf`.
+
