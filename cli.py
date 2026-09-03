@@ -6,6 +6,9 @@ cli.py - query and export helpers for the European Football Database.
 Examples:
   python cli.py club real_madrid
   python cli.py h2h benfica barcelona
+  python cli.py goals real_madrid
+  python cli.py goals --season 1959-60
+  python cli.py leaderboard titles
   python cli.py season 1960-61
   python cli.py export 1960-61 --format json
 """
@@ -19,7 +22,16 @@ import sqlite3
 import sys
 
 from clubs import CLUBS
-from queries import connect, get_club_display_name
+from queries import (
+    LEADERBOARD_KINDS,
+    LEADERBOARD_SORT,
+    club_record,
+    connect,
+    get_club_display_name,
+    head_to_head,
+    leaderboard,
+    season_goal_stats,
+)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -64,44 +76,32 @@ def _club_id(cur, key: str) -> int:
     return row["club_id"]
 
 
+def _wdl(wins, draws, losses):
+    return "%d-%d-%d" % (wins, draws, losses)
+
+
 def cmd_club(args):
     key = _resolve_club_key(args.club_key)
     conn = _require_db()
     cur = conn.cursor()
     cid = _club_id(cur, key)
     meta = CLUBS[key]
+    rec = club_record(cur, cid)
     print("%s (%s, %s) [%s]" % (meta["name"], meta.get("country") or "?", meta.get("city") or "?", key))
-
-    matches = cur.execute(
-        """SELECT m.home_club_id, m.away_club_id, m.home_score, m.away_score,
-                  e.winner_club_id AS edition_winner, e.runner_up_club_id,
-                  e.season_label, e.competition_name
-           FROM match m
-           JOIN tie t ON t.tie_id = m.tie_id
-           JOIN round r ON r.round_id = t.round_id
-           JOIN edition e ON e.edition_id = r.edition_id
-           WHERE m.home_club_id = ? OR m.away_club_id = ?""",
-        (cid, cid),
-    ).fetchall()
-
-    played = wins = draws = losses = gf = ga = 0
-    finals_won = finals_lost = 0
-    for m in matches:
-        if m["home_score"] is None or m["away_score"] is None:
-            continue
-        played += 1
-        if m["home_club_id"] == cid:
-            gf += m["home_score"]; ga += m["away_score"]
-            ours, theirs = m["home_score"], m["away_score"]
-        else:
-            gf += m["away_score"]; ga += m["home_score"]
-            ours, theirs = m["away_score"], m["home_score"]
-        if ours > theirs:
-            wins += 1
-        elif ours < theirs:
-            losses += 1
-        else:
-            draws += 1
+    print("  Matches: %d  W-D-L: %s  Goals: %d-%d  GD: %+d" % (
+        rec["matches_played"], _wdl(rec["wins"], rec["draws"], rec["losses"]),
+        rec["goals_for"], rec["goals_against"], rec["goal_difference"]))
+    print("  Average goals scored per match: %s" % rec["average_goals_per_match"])
+    print("  Finals won: %d  Runner-up finishes: %d  Finals reached: %d" % (
+        rec["titles"], rec["runner_up_finishes"], rec["finals_reached"]))
+    print("  Finals goals: %d-%d (%d match(es))" % (
+        rec["finals_goals_for"], rec["finals_goals_against"], rec["finals_matches"]))
+    if rec["highest_scoring_ties"]:
+        print("  Highest-scoring ties:")
+        for tie in rec["highest_scoring_ties"]:
+            print("    - %s %s %s: %s vs %s  %d goals (%d leg(s))" % (
+                tie["competition_name"], tie["season_label"], tie["round_name"],
+                tie["club_a_name"], tie["club_b_name"], tie["goals"], tie["legs"]))
 
     editions = cur.execute(
         """SELECT season_label, competition_name, winner_club_id, runner_up_club_id
@@ -110,21 +110,12 @@ def cmd_club(args):
            ORDER BY start_year""",
         (cid, cid),
     ).fetchall()
-    for e in editions:
-        if e["winner_club_id"] == cid:
-            finals_won += 1
-        elif e["runner_up_club_id"] == cid:
-            finals_lost += 1
-
-    print("  Matches: %d  W-D-L: %d-%d-%d  Goals: %d-%d" % (played, wins, draws, losses, gf, ga))
-    print("  Finals won: %d  Finals lost (runner-up): %d" % (finals_won, finals_lost))
     if editions:
         print("  Trophy finishes:")
         for e in editions:
             role = "Champion" if e["winner_club_id"] == cid else "Runner-up"
             print("    - %s %s (%s)" % (e["competition_name"], e["season_label"], role))
 
-    # Period names
     hist = cur.execute(
         """SELECT season_label, name_used FROM club_name_history
            WHERE club_id = ? ORDER BY season_label""",
@@ -140,32 +131,151 @@ def cmd_club(args):
 def cmd_h2h(args):
     k1 = _resolve_club_key(args.club_1)
     k2 = _resolve_club_key(args.club_2)
+    if k1 == k2:
+        sys.exit("Head-to-head requires two distinct clubs.")
     conn = _require_db()
     cur = conn.cursor()
     c1 = _club_id(cur, k1)
     c2 = _club_id(cur, k2)
-    rows = cur.execute(
-        """SELECT m.match_date, m.home_club_id, m.away_club_id, m.home_score, m.away_score,
-                  m.venue, e.season_label, e.competition_name, r.name AS round_name,
-                  e.edition_id
-           FROM match m
-           JOIN tie t ON t.tie_id = m.tie_id
-           JOIN round r ON r.round_id = t.round_id
-           JOIN edition e ON e.edition_id = r.edition_id
-           WHERE (m.home_club_id = ? AND m.away_club_id = ?)
-              OR (m.home_club_id = ? AND m.away_club_id = ?)
-           ORDER BY e.start_year, r.round_order, m.leg_number""",
-        (c1, c2, c2, c1),
-    ).fetchall()
-    print("Head-to-head: %s vs %s (%d match(es))" % (CLUBS[k1]["name"], CLUBS[k2]["name"], len(rows)))
-    for m in rows:
-        home = get_club_display_name(cur, m["home_club_id"], m["edition_id"])
-        away = get_club_display_name(cur, m["away_club_id"], m["edition_id"])
-        score = "%s-%s" % (m["home_score"], m["away_score"]) if m["home_score"] is not None else "?-?"
-        when = m["match_date"] or m["season_label"]
-        loc = (" @ " + m["venue"]) if m["venue"] else ""
-        print("  %s | %s %s | %s %s %s%s" % (
-            when, m["competition_name"], m["round_name"], home, score, away, loc))
+    rec = head_to_head(cur, c1, c2)
+    print("Head-to-head: %s vs %s" % (rec["club_a_name"], rec["club_b_name"]))
+    print("=" * 64)
+    print("  Matches played:  %d" % rec["matches_played"])
+    print("  Ties contested:  %d" % rec["ties_contested"])
+    print("  Record:          %s %d  Draw %d  %s %d" % (
+        rec["club_a_name"], rec["wins_a"], rec["draws"], rec["club_b_name"], rec["wins_b"]))
+    print("  Goals:           %d-%d" % (rec["goals_a"], rec["goals_b"]))
+
+    if rec["by_competition"]:
+        print("\n  By competition (lineage):")
+        for b in rec["by_competition"]:
+            print("    - %s: %d match(es)  W-D-L %s  Goals %d-%d" % (
+                b["lineage_name"], b["matches_played"],
+                _wdl(b["wins_a"], b["draws"], b["wins_b"]),
+                b["goals_a"], b["goals_b"]))
+
+    if rec["walkovers"]:
+        print("\n  Walkovers / byes (not scored 3-0 unless a match row records it):")
+        for w in rec["walkovers"]:
+            who = w["winner_name"] or "?"
+            note = (" - " + w["notes"]) if w["notes"] else ""
+            print("    - %s %s %s: awarded to %s (%s)%s" % (
+                w["competition_name"], w["season_label"], w["round_name"],
+                who, w["decided_by"], note))
+
+    if rec["matches"]:
+        print("\n  Matches:")
+        for m in rec["matches"]:
+            if m["home_score"] is None or m["away_score"] is None:
+                score = "?-?"
+            else:
+                score = "%s-%s" % (m["home_score"], m["away_score"])
+            if m["after_extra_time"]:
+                score += " aet"
+            when = m["date"] or m["season_label"]
+            loc = (" @ " + m["venue"]) if m["venue"] else ""
+            print("    %s | %s %s | %s %s %s%s" % (
+                when, m["competition_name"], m["round_name"],
+                m["home_name"], score, m["away_name"], loc))
+    elif not rec["walkovers"]:
+        print("\n  No matches recorded between these clubs in the loaded database.")
+    conn.close()
+
+
+def _print_goal_edition(stats):
+    print("%s %s" % (stats["competition_name"], stats["season_label"]))
+    print("  Total goals: %d" % stats["total_goals"])
+    print("  By round:")
+    for rnd in stats["rounds"]:
+        print("    - %s: %d goal(s) in %d match(es)" % (
+            rnd["name"], rnd["goals"], rnd["matches"]))
+    if stats["hat_trick_notes"]:
+        print("  Hat-trick notes (as stored; scorers are not invented):")
+        for n in stats["hat_trick_notes"]:
+            print("    - [%s] %s %s: %s" % (
+                n["source"], n["season_label"], n["round_name"], n["notes"]))
+    else:
+        print("  Hat-trick notes: none stored in match / tie notes.")
+
+
+def cmd_goals(args):
+    if not args.club_key and not args.season_label:
+        sys.exit("Provide a club key/name and/or --season (e.g. 1959-60).")
+    conn = _require_db()
+    cur = conn.cursor()
+    if args.club_key:
+        key = _resolve_club_key(args.club_key)
+        cid = _club_id(cur, key)
+        rec = club_record(cur, cid, season_label=args.season_label)
+        scope = args.season_label or "all-time (loaded database)"
+        print("Goal statistics: %s  [%s]" % (rec["name"], scope))
+        print("=" * 64)
+        print("  Matches: %d  Goals scored: %d  Conceded: %d  GD: %+d" % (
+            rec["matches_played"], rec["goals_for"], rec["goals_against"],
+            rec["goal_difference"]))
+        print("  Average goals scored per match: %s" % rec["average_goals_per_match"])
+        print("  Finals goals: %d-%d (%d match(es))" % (
+            rec["finals_goals_for"], rec["finals_goals_against"], rec["finals_matches"]))
+        if rec["highest_scoring_ties"]:
+            print("  Highest-scoring ties:")
+            for tie in rec["highest_scoring_ties"]:
+                print("    - %s %s %s: %s vs %s  %d goals (%d leg(s))" % (
+                    tie["competition_name"], tie["season_label"], tie["round_name"],
+                    tie["club_a_name"], tie["club_b_name"], tie["goals"], tie["legs"]))
+    if args.season_label:
+        if args.club_key:
+            print()
+        try:
+            editions = season_goal_stats(cur, args.season_label)
+        except KeyError:
+            conn.close()
+            sys.exit("No edition found for season %s" % args.season_label)
+        for stats in editions:
+            _print_goal_edition(stats)
+            print()
+    conn.close()
+
+
+def cmd_leaderboard(args):
+    conn = _require_db()
+    try:
+        rows = leaderboard(conn, args.kind, limit=args.limit)
+    except ValueError as exc:
+        conn.close()
+        sys.exit(str(exc))
+    titles = {
+        "titles": "All-time leaderboard: titles won",
+        "matches": "All-time leaderboard: matches played / wins / goal difference",
+        "finals": "All-time leaderboard: finals reached (champion + runner-up)",
+    }
+    print(titles[args.kind])
+    print("Derived from the loaded database, not a hard-coded UEFA list.")
+    print("Sort: %s" % LEADERBOARD_SORT[args.kind])
+    print("=" * 72)
+    if not rows:
+        print("  (no rows)")
+        conn.close()
+        return
+    if args.kind == "titles":
+        print("%-4s %-28s %-8s %s" % ("#", "Club", "Country", "Titles"))
+        for r in rows:
+            print("%-4s %-28s %-8s %d" % (
+                r["rank"], r["name"], r["country"] or "", r["titles"]))
+    elif args.kind == "matches":
+        print("%-4s %-28s %-8s %7s %5s %5s %5s %5s %5s" % (
+            "#", "Club", "Country", "Played", "W", "D", "L", "GD", "GF"))
+        for r in rows:
+            print("%-4s %-28s %-8s %7d %5d %5d %5d %+5d %5d" % (
+                r["rank"], r["name"], r["country"] or "",
+                r["matches_played"], r["wins"], r["draws"], r["losses"],
+                r["goal_difference"], r["goals_for"]))
+    else:
+        print("%-4s %-28s %-8s %7s %7s %10s" % (
+            "#", "Club", "Country", "Finals", "Titles", "Runner-up"))
+        for r in rows:
+            print("%-4s %-28s %-8s %7d %7d %10d" % (
+                r["rank"], r["name"], r["country"] or "",
+                r["finals_reached"], r["titles"], r["runner_up_finishes"]))
     conn.close()
 
 
@@ -205,7 +315,7 @@ def cmd_season(args):
                 a = get_club_display_name(cur, tie["club_a_id"], e["edition_id"])
                 b = get_club_display_name(cur, tie["club_b_id"], e["edition_id"])
                 win = (get_club_display_name(cur, tie["winner_club_id"], e["edition_id"])
-                       if tie["winner_club_id"] else "—")
+                       if tie["winner_club_id"] else "-")
                 print("    %s vs %s  [%s] -> %s" % (a, b, tie["decided_by"] or "?", win))
                 for m in cur.execute(
                     """SELECT * FROM match WHERE tie_id = ? ORDER BY leg_number""",
@@ -285,17 +395,47 @@ def cmd_export(args):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="European Football Database CLI")
+    parser = argparse.ArgumentParser(
+        description="European Football Database CLI")
     sub = parser.add_subparsers(dest="command", required=True)
 
     p_club = sub.add_parser("club", help="All-time European record for a club")
     p_club.add_argument("club_key")
     p_club.set_defaults(func=cmd_club)
 
-    p_h2h = sub.add_parser("h2h", help="Head-to-head match history")
+    p_h2h = sub.add_parser(
+        "h2h",
+        help="Head-to-head record (matches, wins, goals, competition breakdown)",
+    )
     p_h2h.add_argument("club_1")
     p_h2h.add_argument("club_2")
     p_h2h.set_defaults(func=cmd_h2h)
+
+    p_goals = sub.add_parser(
+        "goals",
+        help="Goal statistics for a club and/or a season programme",
+    )
+    p_goals.add_argument("club_key", nargs="?", help="Club key or name")
+    p_goals.add_argument(
+        "--season", dest="season_label",
+        help="Season label (e.g. 1959-60) for edition / round totals",
+    )
+    p_goals.set_defaults(func=cmd_goals)
+
+    p_lb = sub.add_parser(
+        "leaderboard",
+        help="All-time club leaderboards derived from the loaded database",
+    )
+    p_lb.add_argument(
+        "kind", choices=list(LEADERBOARD_KINDS),
+        help="titles: trophies won; matches: played/wins/goal difference; "
+             "finals: finals reached (champion + runner-up)",
+    )
+    p_lb.add_argument(
+        "--limit", type=int, default=None,
+        help="Maximum rows to print (default: all)",
+    )
+    p_lb.set_defaults(func=cmd_leaderboard)
 
     p_season = sub.add_parser("season", help="Season round-by-round breakdown")
     p_season.add_argument("season_label")

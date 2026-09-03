@@ -114,3 +114,42 @@ python tools/import_rsssf.py pasted_lines.txt --season 1961-62 --lineage "Europe
 
 The importer fuzzy-matches club names, emits `L()` blocks, and refuses to print
 a season skeleton if leg totals disagree with the RSSSF aggregate.
+
+
+## 7. Head-to-head, goals and leaderboards
+
+Figures are derived from verified `match` / `tie` / `edition` rows in
+`european_football.db`. Rebuild before publishing numbers:
+
+```bash
+python build_database.py --force
+```
+
+```bash
+python cli.py h2h benfica barcelona
+python cli.py h2h real_madrid reims
+python cli.py goals real_madrid
+python cli.py goals --season 1959-60
+python cli.py leaderboard titles
+python cli.py leaderboard matches
+python cli.py leaderboard finals --limit 10
+```
+
+- **Head-to-head** uses `club_id` joins. Period names (e.g. *Vörös Lobogó*)
+  appear on individual matches via `get_club_display_name`; the summary uses
+  canonical `club.name`. Walkovers are labelled and are not scored 3-0 unless
+  a match row holds that scoreline. Two-legged ties count as two matches;
+  play-offs, replays and single-leg finals each count as a match.
+- **Goals** respect extra-time scores already stored on the match row and do
+  not double-count replay legs. Hat-trick notes are printed only when present
+  in `match.notes` or `tie.notes`.
+- **Leaderboards** rank the loaded database (not a hard-coded UEFA list).
+  Sort order is printed by the command and defined in
+  `queries.LEADERBOARD_SORT` / `notes/00_Audits/audits_008.md`:
+  - `titles` - titles won (desc), canonical name (A-Z)
+  - `matches` - matches played, then wins, then goal difference, then name
+  - `finals` - finals reached (champion + runner-up), then titles, then name
+
+Helpers live in `queries.py` so the CustomTkinter viewer can consume the same
+numbers later. Golden Classic Era fixtures in `seasons.py` are not rewritten
+to chase a statistic; if a figure disagrees with RSSSF, fix the query.

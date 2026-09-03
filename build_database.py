@@ -75,17 +75,22 @@ def unused_club_keys(clubs=None, referenced=None):
     return sorted(k for k in clubs if k not in referenced)
 
 
-def build(force=False):
-    if os.path.exists(DB_PATH):
+def build(force=False, db_path=None):
+    """Build the SQLite database. ``db_path`` defaults to ``european_football.db``.
+
+    Tests pass a temporary path so they never assume a stale on-disk file.
+    """
+    db_path = db_path or DB_PATH
+    if os.path.exists(db_path):
         if not force:
-            print(f"Database already exists at {DB_PATH}\nRe-run with --force to rebuild.")
+            print(f"Database already exists at {db_path}\nRe-run with --force to rebuild.")
             return 0
-        os.remove(DB_PATH)
+        os.remove(db_path)
 
     with open(SCHEMA_PATH, "r", encoding="utf-8") as fh:
         schema_sql = fh.read()
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(db_path)
     conn.execute("PRAGMA foreign_keys = ON")
     cur = conn.cursor()
     cur.executescript(schema_sql)
@@ -94,7 +99,7 @@ def build(force=False):
     referenced = collect_referenced_keys()
     unknown = sorted(k for k in referenced if k not in CLUBS)
     if unknown:
-        conn.close(); os.remove(DB_PATH)
+        conn.close(); os.remove(db_path)
         sys.exit(f"ERROR: season data references unknown club keys: {unknown}")
 
     unused = unused_club_keys(CLUBS, referenced)
@@ -181,12 +186,12 @@ def build(force=False):
     # ---- VERIFY before committing -----------------------------------------
     problems = verify(cur, club_id)
     if problems:
-        conn.rollback(); conn.close(); os.remove(DB_PATH)
+        conn.rollback(); conn.close(); os.remove(db_path)
         print("\n".join(problems))
         sys.exit(f"\nBUILD ABORTED: {len(problems)} data problem(s). Nothing written.")
 
     conn.commit()
-    report(cur)
+    report(cur, db_path=db_path)
     conn.close()
     return 0
 
@@ -241,10 +246,10 @@ def verify(cur, club_id, seasons=None):
     return problems
 
 
-def report(cur):
+def report(cur, db_path=None):
     counts = {t: cur.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
               for t in ("lineage", "club", "club_name_history", "edition", "round", "tie", "match")}
-    print(f"Built {DB_PATH}")
+    print(f"Built {db_path or DB_PATH}")
     print("  " + ", ".join(f"{k}={v}" for k, v in counts.items()))
     print("  All aggregates verified against RSSSF printed totals.")
     for row in cur.execute("SELECT season_label, competition_name FROM edition ORDER BY start_year"):
