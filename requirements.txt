@@ -1,0 +1,2 @@
+pytest
+# customtkinter is optional; required only to run the desktop viewer (app.py)
