@@ -119,3 +119,19 @@ CREATE TABLE match (
 CREATE INDEX idx_round_edition ON round(edition_id);
 CREATE INDEX idx_tie_round     ON tie(round_id);
 CREATE INDEX idx_match_tie     ON match(tie_id);
+
+-- ---------------------------------------------------------------------
+-- club_name_history: period-accurate club names (e.g. Vörös Lobogó for
+-- MTK Budapest in 1955-56). Canonical modern/recognisable names stay on
+-- `club`; this table supplies the name of the day per edition/season.
+-- ---------------------------------------------------------------------
+CREATE TABLE club_name_history (
+    history_id   INTEGER PRIMARY KEY,
+    club_id      INTEGER NOT NULL REFERENCES club(club_id),
+    edition_id   INTEGER REFERENCES edition(edition_id),
+    season_label TEXT,
+    name_used    TEXT NOT NULL,
+    notes        TEXT
+);
+CREATE INDEX idx_club_name_edition ON club_name_history(club_id, edition_id);
+

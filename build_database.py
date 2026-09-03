@@ -19,7 +19,8 @@ import os
 import sqlite3
 import sys
 
-from clubs import CLUBS
+from clubs import CLUBS, CLUB_NAME_HISTORY
+from lineages import LINEAGES
 from seasons import SEASONS
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -111,11 +112,14 @@ def build(force=False):
     # ---- lineages ---------------------------------------------------------
     lineage_id = {}
     for name in dict.fromkeys(s["lineage"] for s in SEASONS):
-        cur.execute("INSERT INTO lineage (name, notes) VALUES (?,?)",
-                    (name, "Premier European trophy line: European Cup -> UEFA Champions League."))
+        note = LINEAGES.get(name, "")
+        if name not in LINEAGES:
+            print("WARNING: lineage %r has no LINEAGES entry; inserting with empty notes." % name)
+        cur.execute("INSERT INTO lineage (name, notes) VALUES (?,?)", (name, note))
         lineage_id[name] = cur.lastrowid
 
     # ---- editions / rounds / ties / matches -------------------------------
+    edition_ids = {}  # (lineage_name, season_label) -> edition_id
     for s in SEASONS:
         cur.execute(
             """INSERT INTO edition
@@ -127,6 +131,7 @@ def build(force=False):
              club_id.get(s["winner"]), club_id.get(s["runner_up"]),
              1 if s["away_goals_active"] else 0, s.get("notes")))
         edition_id = cur.lastrowid
+        edition_ids[(s["lineage"], s["season_label"])] = edition_id
 
         for order, rnd in enumerate(s["rounds"], start=1):
             cur.execute("INSERT INTO round (edition_id, name, round_order) VALUES (?,?,?)",
@@ -144,6 +149,34 @@ def build(force=False):
 
                 for i, leg in enumerate(tie["legs"], start=1):
                     cur.execute(MATCH_INSERT_SQL, match_insert_tuple(tie_id, i, club_id, leg))
+
+
+    # ---- club_name_history (period-accurate display names) ----------------
+    for entry in CLUB_NAME_HISTORY:
+        key = entry["club"]
+        if key not in club_id:
+            # Club registered but unused in seeded seasons - skip quietly.
+            continue
+        season_label = entry.get("season_label")
+        # Prefer an edition of the same season_label (any lineage); if several,
+        # insert one row per matching edition so display works in each.
+        matched = [(lin, lab, eid) for (lin, lab), eid in edition_ids.items()
+                   if lab == season_label]
+        if matched:
+            for _lin, lab, eid in matched:
+                cur.execute(
+                    """INSERT INTO club_name_history
+                       (club_id, edition_id, season_label, name_used, notes)
+                       VALUES (?,?,?,?,?)""",
+                    (club_id[key], eid, lab, entry["name_used"], entry.get("notes")),
+                )
+        else:
+            cur.execute(
+                """INSERT INTO club_name_history
+                   (club_id, edition_id, season_label, name_used, notes)
+                   VALUES (?,?,?,?,?)""",
+                (club_id[key], None, season_label, entry["name_used"], entry.get("notes")),
+            )
 
     # ---- VERIFY before committing -----------------------------------------
     problems = verify(cur, club_id)
@@ -182,16 +215,35 @@ def verify(cur, club_id, seasons=None):
                     if aw == b: gb += as_
                 if tie["agg"] is not None and (ga, gb) != tuple(tie["agg"]):
                     problems.append(f'!! AGG  {tag}: legs give {ga}-{gb}, RSSSF says {tie["agg"][0]}-{tie["agg"][1]}')
+
                 if tie["by"] == "aggregate":
                     winner = a if ga > gb else (b if gb > ga else None)
                     if winner != tie["win"]:
                         problems.append(f'!! WIN  {tag}: higher aggregate is {winner}, data says {tie["win"]}')
+                if tie["by"] == "away_goals":
+                    if ga != gb:
+                        problems.append(
+                            f'!! AG   {tag}: decided_by=away_goals but aggregate is {ga}-{gb}, not level')
+                    else:
+                        aa = ab = 0
+                        for idx, leg in enumerate(tie["legs"]):
+                            if idx >= 2:
+                                continue
+                            h, aw, hs, as_, _ = leg_fields(leg)
+                            if aw == a:
+                                aa += as_
+                            if aw == b:
+                                ab += as_
+                        winner = a if aa > ab else (b if ab > aa else None)
+                        if winner != tie["win"]:
+                            problems.append(
+                                f'!! AG   {tag}: away goals {aa}-{ab} imply {winner}, data says {tie["win"]}')
     return problems
 
 
 def report(cur):
     counts = {t: cur.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
-              for t in ("lineage", "club", "edition", "round", "tie", "match")}
+              for t in ("lineage", "club", "club_name_history", "edition", "round", "tie", "match")}
     print(f"Built {DB_PATH}")
     print("  " + ", ".join(f"{k}={v}" for k, v in counts.items()))
     print("  All aggregates verified against RSSSF printed totals.")

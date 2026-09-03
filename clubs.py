@@ -118,4 +118,75 @@ CLUBS = {
     "sparta_rot":    {"name": "Sparta Rotterdam",     "country": "NED", "city": "Rotterdam"},
     "b1909_odense":  {"name": "B1909 Odense",         "country": "DEN", "city": "Odense"},
     "kups":          {"name": "KuPS Kuopio",          "country": "FIN", "city": "Kuopio"},
+
+    # --- added 1960-61 European Cup -----------------------------------------
+    "ujpest":        {"name": "Újpesti Dózsa",        "country": "HUN", "city": "Budapest",
+                      "notes": "Later Újpest FC."},
+    "fredrikstad":   {"name": "Fredrikstad FK",       "country": "NOR", "city": "Fredrikstad"},
+    "hifk":          {"name": "HIFK Helsinki",        "country": "FIN", "city": "Helsinki",
+                      "notes": "Listed by RSSSF as HIFK / IFK Helsingfors."},
+    "ifk_malmo":     {"name": "IFK Malmö",            "country": "SWE", "city": "Malmö"},
+    "limerick":      {"name": "Limerick",             "country": "IRL", "city": "Limerick"},
+    "lierse":        {"name": "Lierse SK",            "country": "BEL", "city": "Lier"},
+    "hradec":        {"name": "Spartak Hradec Králové", "country": "TCH", "city": "Hradec Králové"},
+    "hamburg":       {"name": "Hamburger SV",         "country": "FRG", "city": "Hamburg"},
+    "burnley":       {"name": "Burnley",              "country": "ENG", "city": "Burnley"},
+    "panathinaikos": {"name": "Panathinaikos",        "country": "GRE", "city": "Athens"},
+
+    # --- added 1960-61 Cup Winners' Cup -------------------------------------
+    "red_star_brno": {"name": "Rudá Hvězda Brno",     "country": "TCH", "city": "Brno",
+                      "notes": "Red Star Brno; later Zbrojovka Brno."},
+    "ferencvaros":   {"name": "Ferencváros",          "country": "HUN", "city": "Budapest"},
+    "lucerne":       {"name": "FC Luzern",            "country": "SUI", "city": "Lucerne",
+                      "notes": "Listed by RSSSF as FC Lucerne."},
+    "austria_wien":  {"name": "FK Austria Wien",      "country": "AUT", "city": "Vienna"},
+    "gladbach":      {"name": "Borussia Mönchengladbach", "country": "FRG", "city": "Mönchengladbach"},
 }
+
+
+# Period-accurate display names. Build populates club_name_history from these.
+# Keys reference CLUBS; season_label is matched to edition rows at build time.
+CLUB_NAME_HISTORY = [
+    {
+        "club": "mtk",
+        "season_label": "1955-56",
+        "name_used": "Vörös Lobogó",
+        "notes": "Official name during the inaugural European Cup.",
+    },
+    {
+        "club": "slovan",
+        "season_label": "1956-57",
+        "name_used": "CH Bratislava",
+        "notes": "Červená hviezda (Red Star) Bratislava.",
+    },
+    {
+        "club": "slovan",
+        "season_label": "1959-60",
+        "name_used": "CH Bratislava",
+        "notes": "Červená hviezda (Red Star) Bratislava.",
+    },
+    {
+        "club": "cwks_warsaw",
+        "season_label": "1960-61",
+        "name_used": "Legia Warsaw",
+        "notes": "Competed as Legia Warsaw in the European Cup.",
+    },
+    {
+        "club": "cca_buc",
+        "season_label": "1957-58",
+        "name_used": "CCA București",
+        "notes": "Army club; later Steaua București / FCSB.",
+    },
+    {
+        "club": "wismut",
+        "season_label": "1957-58",
+        "name_used": "Wismut Karl-Marx-Stadt",
+        "notes": "Now Chemnitzer FC.",
+    },
+    {
+        "club": "wismut",
+        "season_label": "1960-61",
+        "name_used": "Wismut Karl-Marx-Stadt",
+        "notes": "Now Chemnitzer FC.",
+    },
+]

@@ -17,10 +17,10 @@ Unseeded / seeded two-legged knockouts, from 1955 to the mid-1990s rebrands.
 - [x] CustomTkinter viewer: season browser, round-by-round paired fixtures,
       auto-aggregate, winner highlighting.
 - [x] European Cup **1955-56 → 1959-60** seeded (the Real Madrid five-in-a-row).
-- [ ] Continue the European Cup season by season (1960-61 onward).
-- [ ] Add the other classic-era lines as their own lineages:
-      - European Cup Winners' Cup (1960-61 → 1998-99)
-      - Inter-Cities Fairs Cup → UEFA Cup (1955 onward)
+- [x] European Cup **1960-61** seeded (Benfica's first title).
+- [ ] Continue the European Cup season by season (1961-62 onward).
+- [x] European Cup Winners' Cup inaugural **1960-61** seeded (Fiorentina).
+- [ ] Continue Cup Winners' Cup and add Inter-Cities Fairs Cup → UEFA Cup.
 - [ ] Optional viewer polish: a proper bracket view for pure knockout rounds.
 
 ## v2.0 — The Group Stage Era
@@ -45,7 +45,9 @@ feature — no change to existing tables.
 
 ## Known modelling notes (candidates for a future minor version)
 
-- **Period-accurate club names.** The club registry keeps one canonical row per
+- [x] **Period-accurate club names** via `club_name_history` / `CLUB_NAME_HISTORY`.
+  Remaining polish: surface them throughout the CustomTkinter viewer.
+- Legacy note: the club registry keeps one canonical row per
   real club, so a club that was renamed mid-era (MTK Budapest ↔ *Vörös Lobogó*;
   Slovan Bratislava ↔ *ČH Bratislava*) currently displays under one name across
   all seasons, with the period name recorded in its notes. A small

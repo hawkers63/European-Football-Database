@@ -11,13 +11,14 @@ Leg format (a tuple):
     (home_key, away_key, home_score, away_score)
     (home_key, away_key, home_score, away_score, extras_dict)
 
-extras_dict may contain: "venue", "date" (ISO), "att", "ref", "aet" (True).
+extras_dict may contain: "venue", "date" (ISO), "att", "ref", "aet" (True),
+                "home_pens", "away_pens" (shootout scores).
 
 Tie format (a dict):
     t1, t2      club keys (t1 = first-named side / first-leg host)
     win         winner club key (or None)
-    by          'aggregate' | 'replay' | 'coin_toss' | 'single_match' |
-                'walkover' | 'bye'
+    by          'aggregate' | 'away_goals' | 'replay' | 'penalties' |
+                'coin_toss' | 'single_match' | 'walkover' | 'bye'
     agg         (t1_goals, t2_goals) over legs 1 & 2 only — RSSSF's printed
                 aggregate. None for walkovers/byes with no legs.
     legs        list of leg tuples (a 3rd leg is a play-off/replay)
@@ -398,6 +399,137 @@ SEASONS = [
                 {"t1": "real_madrid", "t2": "eintracht", "win": "real_madrid", "by": "single_match", "agg": (7, 3),
                  "legs": [L("real_madrid", "eintracht", 7, 3, venue="Hampden Park, Glasgow",
                             date="1960-05-18", att=135000, ref="Jack Mowat (Scotland)")]},
+            ]},
+        ],
+    },
+
+
+    # =====================================================================
+    # 1960-61 - Benfica's first European Cup
+    # =====================================================================
+    {
+        "lineage": "European Cup", "season_label": "1960-61", "start_year": 1960,
+        "competition_name": "European Cup",
+        "winner": "benfica", "runner_up": "barcelona", "away_goals_active": False,
+        "notes": "Benfica's first European Cup; Real Madrid's five-in-a-row ended by Barcelona in the first round.",
+        "rounds": [
+            {"name": "Preliminary Round", "ties": [
+                {"t1": "hearts", "t2": "benfica", "win": "benfica", "by": "aggregate", "agg": (1, 5),
+                 "legs": [L("hearts", "benfica", 1, 2), L("benfica", "hearts", 3, 0)]},
+                {"t1": "red_star", "t2": "ujpest", "win": "ujpest", "by": "aggregate", "agg": (1, 5),
+                 "legs": [L("red_star", "ujpest", 1, 2), L("ujpest", "red_star", 3, 0)]},
+                {"t1": "fredrikstad", "t2": "ajax", "win": "fredrikstad", "by": "aggregate", "agg": (4, 3),
+                 "legs": [L("fredrikstad", "ajax", 4, 3), L("ajax", "fredrikstad", 0, 0)]},
+                {"t1": "agf", "t2": "cwks_warsaw", "win": "agf", "by": "aggregate", "agg": (3, 1),
+                 "legs": [L("agf", "cwks_warsaw", 3, 0), L("cwks_warsaw", "agf", 1, 0)],
+                 "note": "Legia Warsaw (CWKS) competed under the Legia name this season."},
+                {"t1": "juventus", "t2": "cdna_sofia", "win": "cdna_sofia", "by": "aggregate", "agg": (3, 4),
+                 "legs": [L("juventus", "cdna_sofia", 2, 0), L("cdna_sofia", "juventus", 4, 1)]},
+                {"t1": "hifk", "t2": "ifk_malmo", "win": "ifk_malmo", "by": "aggregate", "agg": (2, 5),
+                 "legs": [L("hifk", "ifk_malmo", 1, 3), L("ifk_malmo", "hifk", 2, 1)]},
+                {"t1": "rapid_wien", "t2": "besiktas", "win": "rapid_wien", "by": "aggregate", "agg": (4, 1),
+                 "legs": [L("rapid_wien", "besiktas", 4, 0), L("besiktas", "rapid_wien", 1, 0)]},
+                {"t1": "limerick", "t2": "young_boys", "win": "young_boys", "by": "aggregate", "agg": (2, 9),
+                 "legs": [L("limerick", "young_boys", 0, 5), L("young_boys", "limerick", 4, 2)]},
+                {"t1": "reims", "t2": "jeunesse", "win": "reims", "by": "aggregate", "agg": (11, 1),
+                 "legs": [L("reims", "jeunesse", 6, 1), L("jeunesse", "reims", 0, 5)]},
+                {"t1": "barcelona", "t2": "lierse", "win": "barcelona", "by": "aggregate", "agg": (5, 0),
+                 "legs": [L("barcelona", "lierse", 2, 0),
+                          L("lierse", "barcelona", 0, 3, venue="Brussels (2nd leg relocated)")]},
+                {"t1": "wismut", "t2": "glenavon", "win": "wismut", "by": "walkover", "agg": None,
+                 "legs": [], "note": "Glenavon withdrew; Wismut Karl-Marx-Stadt walkover."},
+                {"t1": "hradec", "t2": "cca_buc", "win": "hradec", "by": "walkover", "agg": None,
+                 "legs": [],
+                 "note": "CCA București withdrew by decision of the Romanian federation."},
+            ]},
+            {"name": "First Round", "ties": [
+                {"t1": "benfica", "t2": "ujpest", "win": "benfica", "by": "aggregate", "agg": (7, 4),
+                 "legs": [L("benfica", "ujpest", 6, 2), L("ujpest", "benfica", 2, 1)]},
+                {"t1": "agf", "t2": "fredrikstad", "win": "agf", "by": "aggregate", "agg": (4, 0),
+                 "legs": [L("agf", "fredrikstad", 3, 0),
+                          L("fredrikstad", "agf", 0, 1, venue="Oslo (2nd leg relocated)")]},
+                {"t1": "ifk_malmo", "t2": "cdna_sofia", "win": "ifk_malmo", "by": "aggregate", "agg": (2, 1),
+                 "legs": [L("ifk_malmo", "cdna_sofia", 1, 0), L("cdna_sofia", "ifk_malmo", 1, 1)]},
+                {"t1": "rapid_wien", "t2": "wismut", "win": "rapid_wien", "by": "replay", "agg": (3, 3),
+                 "legs": [L("rapid_wien", "wismut", 3, 1), L("wismut", "rapid_wien", 2, 0),
+                          L("rapid_wien", "wismut", 1, 0, venue="Basel (play-off)")]},
+                {"t1": "young_boys", "t2": "hamburg", "win": "hamburg", "by": "aggregate", "agg": (3, 8),
+                 "legs": [L("young_boys", "hamburg", 0, 5), L("hamburg", "young_boys", 3, 3)]},
+                {"t1": "burnley", "t2": "reims", "win": "burnley", "by": "aggregate", "agg": (4, 3),
+                 "legs": [L("burnley", "reims", 2, 0),
+                          L("reims", "burnley", 3, 2, venue="Paris (2nd leg relocated)")]},
+                {"t1": "hradec", "t2": "panathinaikos", "win": "hradec", "by": "aggregate", "agg": (1, 0),
+                 "legs": [L("hradec", "panathinaikos", 1, 0), L("panathinaikos", "hradec", 0, 0)]},
+                {"t1": "real_madrid", "t2": "barcelona", "win": "barcelona", "by": "aggregate", "agg": (3, 4),
+                 "legs": [L("real_madrid", "barcelona", 2, 2), L("barcelona", "real_madrid", 2, 1)]},
+            ]},
+            {"name": "Quarter-Finals", "ties": [
+                {"t1": "benfica", "t2": "agf", "win": "benfica", "by": "aggregate", "agg": (7, 2),
+                 "legs": [L("benfica", "agf", 3, 1), L("agf", "benfica", 1, 4)]},
+                {"t1": "rapid_wien", "t2": "ifk_malmo", "win": "rapid_wien", "by": "aggregate", "agg": (4, 0),
+                 "legs": [L("rapid_wien", "ifk_malmo", 2, 0), L("ifk_malmo", "rapid_wien", 0, 2)]},
+                {"t1": "burnley", "t2": "hamburg", "win": "hamburg", "by": "aggregate", "agg": (4, 5),
+                 "legs": [L("burnley", "hamburg", 3, 1), L("hamburg", "burnley", 4, 1)]},
+                {"t1": "barcelona", "t2": "hradec", "win": "barcelona", "by": "aggregate", "agg": (5, 1),
+                 "legs": [L("barcelona", "hradec", 4, 0),
+                          L("hradec", "barcelona", 1, 1, venue="Prague (2nd leg)")]},
+            ]},
+            {"name": "Semi-Finals", "ties": [
+                {"t1": "benfica", "t2": "rapid_wien", "win": "benfica", "by": "aggregate", "agg": (4, 1),
+                 "legs": [L("benfica", "rapid_wien", 3, 0), L("rapid_wien", "benfica", 1, 1)],
+                 "note": "2nd leg abandoned after 88 minutes; result stood."},
+                {"t1": "barcelona", "t2": "hamburg", "win": "barcelona", "by": "replay", "agg": (2, 2),
+                 "legs": [L("barcelona", "hamburg", 1, 0), L("hamburg", "barcelona", 2, 1),
+                          L("barcelona", "hamburg", 1, 0, venue="Brussels (play-off)")]},
+            ]},
+            {"name": "Final", "ties": [
+                {"t1": "benfica", "t2": "barcelona", "win": "benfica", "by": "single_match", "agg": (3, 2),
+                 "legs": [L("benfica", "barcelona", 3, 2, venue="Wankdorf Stadium, Berne",
+                            date="1961-05-31", att=28000, ref="Gottfried Dienst (Switzerland)")]},
+            ]},
+        ],
+    },
+
+    # =====================================================================
+    # 1960-61 - inaugural European Cup Winners' Cup
+    # =====================================================================
+    {
+        "lineage": "European Cup Winners' Cup", "season_label": "1960-61", "start_year": 1960,
+        "competition_name": "European Cup Winners' Cup",
+        "winner": "fiorentina", "runner_up": "rangers", "away_goals_active": False,
+        "notes": "Inaugural Cup Winners' Cup. Only final decided over two legs.",
+        "rounds": [
+            {"name": "Qualifying Round", "ties": [
+                {"t1": "vorwarts", "t2": "red_star_brno", "win": "red_star_brno", "by": "aggregate", "agg": (2, 3),
+                 "legs": [L("vorwarts", "red_star_brno", 2, 1), L("red_star_brno", "vorwarts", 2, 0)]},
+                {"t1": "rangers", "t2": "ferencvaros", "win": "rangers", "by": "aggregate", "agg": (5, 4),
+                 "legs": [L("rangers", "ferencvaros", 4, 2), L("ferencvaros", "rangers", 2, 1)]},
+            ]},
+            {"name": "Quarter-Finals", "ties": [
+                {"t1": "lucerne", "t2": "fiorentina", "win": "fiorentina", "by": "aggregate", "agg": (2, 9),
+                 "legs": [L("lucerne", "fiorentina", 0, 3), L("fiorentina", "lucerne", 6, 2)]},
+                {"t1": "red_star_brno", "t2": "dinamo_zagreb", "win": "dinamo_zagreb", "by": "aggregate", "agg": (0, 2),
+                 "legs": [L("red_star_brno", "dinamo_zagreb", 0, 0), L("dinamo_zagreb", "red_star_brno", 2, 0)]},
+                {"t1": "austria_wien", "t2": "wolves", "win": "wolves", "by": "aggregate", "agg": (2, 5),
+                 "legs": [L("austria_wien", "wolves", 2, 0), L("wolves", "austria_wien", 5, 0)]},
+                {"t1": "gladbach", "t2": "rangers", "win": "rangers", "by": "aggregate", "agg": (0, 11),
+                 "legs": [L("gladbach", "rangers", 0, 3, venue="Düsseldorf (1st leg relocated)"),
+                          L("rangers", "gladbach", 8, 0)]},
+            ]},
+            {"name": "Semi-Finals", "ties": [
+                {"t1": "fiorentina", "t2": "dinamo_zagreb", "win": "fiorentina", "by": "aggregate", "agg": (4, 2),
+                 "legs": [L("fiorentina", "dinamo_zagreb", 3, 0), L("dinamo_zagreb", "fiorentina", 2, 1)]},
+                {"t1": "rangers", "t2": "wolves", "win": "rangers", "by": "aggregate", "agg": (3, 1),
+                 "legs": [L("rangers", "wolves", 2, 0), L("wolves", "rangers", 1, 1)]},
+            ]},
+            {"name": "Final", "ties": [
+                {"t1": "rangers", "t2": "fiorentina", "win": "fiorentina", "by": "aggregate", "agg": (1, 4),
+                 "legs": [
+                     L("rangers", "fiorentina", 0, 2, venue="Ibrox Stadium, Glasgow",
+                       date="1961-05-17", att=80000, ref="Carl Erich Steiner (Austria)"),
+                     L("fiorentina", "rangers", 2, 1, venue="Stadio Comunale, Florence",
+                       date="1961-05-27", att=50000, ref="Vilmos Hernádi (Hungary)"),
+                 ]},
             ]},
         ],
     },
