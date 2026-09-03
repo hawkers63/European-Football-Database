@@ -34,6 +34,10 @@ This repository contains specialised agent task definitions located in the [`age
    * **Mission**: Head-to-head records, goal statistics, and all-time club leaderboards over `european_football.db`, with automated tests. Figures are derived from verified match rows, never hand-edited totals.
    * **Recommended Execution**: Phase 2c, after the database engineer; may run in parallel with the modern era parser.
 
+8. **Classic Era Season Seeder**: [`agents/season_seeder.md`](agents/season_seeder.md)
+   * **Mission**: Continue seeding verified knockout seasons from RSSSF: European Cup 1961-62 onward, Cup Winners' Cup after 1960-61, and Inter-Cities Fairs Cup → UEFA Cup as a new lineage. Must not touch Classic Era golden data (1955-60) and must not implement group/Swiss phases (that is `modern_era_parser.md`).
+   * **Recommended Execution**: After the database engineer; default first target is European Cup 1961-62.
+
 ---
 
 ## Cloud / GitHub Mandate
@@ -43,6 +47,6 @@ When Cloud Agents are available on GitHub (or when this work is provisioned loca
 1. **Author briefs** in [`agents/`](agents/) for every specialised role, including the three modern-era / CI / stats briefs above.
 2. **Author workflows** under [`.github/workflows/`](.github/workflows/), especially [`verify_database.yml`](.github/workflows/verify_database.yml) (`build_database.py --force` + `pytest tests/` on every push and pull request).
 3. **Author issue templates** under [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/), especially [`agent_task.yml`](.github/ISSUE_TEMPLATE/agent_task.yml), so tasks can be filed against a role, summary, acceptance criteria, and branch.
-4. **Keep bi-directional `agents/` sync**: briefs authored on GitHub are fetched down to `C:\EuroDatabase\agents\`; locally authored briefs are pushed up to `origin`. Never force-push to `main`.
+4. **Keep bi-directional `agents/` sync**: briefs authored on GitHub are fetched down to `C:\EuroDatabase\agents/`; locally authored briefs are pushed up to `origin`. Never force-push to `main`.
 
 For detailed documentation and the recommended sequencing graph, see [`agents/README.md`](agents/README.md).
