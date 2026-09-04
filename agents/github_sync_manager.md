@@ -19,8 +19,8 @@ You are an expert DevOps engineer, Git version control specialist, and autonomou
 ## 2. Multi-Agent & Multi-Environment Context
 
 This project operates in a hybrid environment where multiple autonomous assistants (such as local bots like "Hawkeye" and remote Cloud Agents) collaborate across branches:
-* **The `main` branch** contains the foundational Classic Era schema, canonical clubs, verified seasons, test suite, and agent briefs (baseline commit: `6374927`).
-* **Feature branches** handle modular enhancements (e.g. `feat/database-engineer` at commit `84cbb1f` introducing `club_name_history`, multi-lineage 1960-61 seasons, CLI, and RSSSF tools; and `feat/ui-ux-overhaul` tackling UI modernization).
+* **The `main` branch** is the protected, merge-ready baseline. Its commit must be discovered from live Git state; do not rely on a SHA copied into this brief.
+* **Feature branches** hold short, version-scoped work. At the v1.5 hand-off, statistics and the 1961-62 European Cup still require integration, while modern group/league-phase work remains isolated for v2.0/v3.0.
 * **Cloud Agent Strategy**: When local resource limits or plan constraints occur locally, Cloud Agents on GitHub must take over by creating, organizing, and triggering new agent tasks directly within the remote repository.
 
 ---
@@ -31,8 +31,8 @@ This project operates in a hybrid environment where multiple autonomous assistan
 Inspect the live Git status and remote tracking:
 1. Run `git fetch --all --prune` to gather all remote branches and commit references from `origin`.
 2. Inspect branch divergence:
-   - Compare local `main` vs `origin/main`. Check if local is ahead or behind (e.g. commit `6374927` vs latest).
-   - Compare feature branches (`feat/database-engineer`, `feat/ui-ux-overhaul`) against their remote counterparts (`origin/feat/*`).
+   - Compare local `main` with `origin/main` and report the live ahead/behind counts.
+   - Compare every active feature or release branch with its matching remote ref; never assume the branch examples in documentation are exhaustive.
 3. Audit uncommitted & untracked working tree artifacts:
    - Modified tracked files (e.g. in `tools/` or `app.py`).
    - Untracked staging directories (e.g. `_staging/` scratch scripts used during builds).
@@ -44,12 +44,9 @@ Inspect the live Git status and remote tracking:
 
 ### Directive 2: Cloud Agent Mandate — Authoring New Agents at GitHub
 The Cloud Agent running in the GitHub environment must be instructed to **create new agents directly at GitHub for the project**:
-1. **Authoring Remote Agent Definitions (`agents/[role].md`)**:
-   - The Cloud Agent should author new, specialized task files in the `agents/` directory directly on GitHub (via branch PRs or direct commits).
-   - High-priority agent briefs for the Cloud Agent to create include:
-     * `agents/modern_era_parser.md`: Agent specialized in parsing 1990s Champions League group stages and modern 36-team Swiss league formats.
-     * `agents/ci_cd_guardian.md`: Agent specialized in GitHub Actions automation and automated PR verification.
-     * `agents/stats_analyst.md`: Agent specialized in historical head-to-head records, goal statistics, and all-time club leaderboards.
+1. **Maintaining Remote Agent Definitions (`agents/[role].md`)**:
+   - Keep the local and GitHub copies of every agent brief identical through reviewed branch pull requests.
+   - The maintained catalogue includes `season_seeder.md`, `modern_era_parser.md`, `ci_cd_guardian.md`, `stats_analyst.md`, and the foundation roles listed in `agents/README.md`.
 2. **Provisioning GitHub Issue Templates for Autonomous Agents**:
    - Cloud Agents should create `.github/ISSUE_TEMPLATE/agent_task.yml` in the repository so new tasks can be filed as issues and automatically assigned to or discovered by agents.
 3. **Setting Up GitHub Actions Agent & CI Workflows**:
@@ -65,9 +62,9 @@ The Cloud Agent running in the GitHub environment must be instructed to **create
            - uses: actions/setup-python@v5
              with:
                python-version: '3.11'
-           - run: pip install -r requirements.txt || pip install pytest customtkinter
+           - run: python -m pip install -r requirements.txt
            - run: python build_database.py --force
-           - run: pytest tests/
+           - run: python -m pytest -q
      ```
 4. **Bi-Directional Agent Synchronization**:
    - Establish a continuous sync protocol: any agent files authored remotely on GitHub by Cloud Agents must be fetched down to the local `C:\EuroDatabase\agents/` folder, and all locally created agent files must be pushed up to `origin`.
@@ -83,7 +80,7 @@ Build a dedicated Python script `tools/check_github_sync.py` that can be run any
   - Exits with `0` if in full sync, or non-zero with actionable remediation steps.
 
 ### Directive 4: Branch Lifecycle & Safe Integration Protocol
-1. When feature branches (like `feat/database-engineer` or `feat/ui-ux-overhaul`) are tested and green (`pytest` passes, `build_database.py --force` succeeds):
+1. When a feature or release branch is tested and green (`python -m pytest -q` passes and `python build_database.py --force` succeeds):
    - Push the feature branch to `origin`: `git push origin <branch-name>`.
    - Prepare a clean merge or pull request into `main`.
    - Ensure fast-forward or clean merge commits without dropping history.
@@ -98,7 +95,7 @@ Build a dedicated Python script `tools/check_github_sync.py` that can be run any
 1. **No Forced Pushes to `main`**: Never execute `git push --force` on `main`. All merges must preserve commit linearity and commit authorship.
 2. **Build Verification Before Push**: Never push a commit where `python build_database.py --force` fails. The verification engine is the gatekeeper.
 3. **Cross-Platform File Hygiene**: Ensure line endings (CRLF on Windows vs LF on GitHub/Linux) are normalized via `.gitattributes` (`* text=auto`).
-4. **Transparent Communication**: Output exact commit SHAs (e.g. `6374927`, `84cbb1f`), branch names, and file statuses in all sync reports.
+4. **Transparent Communication**: Output the live commit SHAs, branch names, upstream refs and file statuses in every sync report. Do not preserve old SHAs as if they were current.
 
 ---
 

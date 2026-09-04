@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased - v1.6 Classic competitions expansion
+- Established v1.5 as the completed working baseline and reconciled README,
+  roadmap, release gates and agent task metadata with the live repository.
+- Next data targets are European Cup **1962-63**, Cup Winners' Cup **1961-62**
+  and the inaugural Inter-Cities Fairs Cup **1955-58**.
+- Group-stage and 36-team league-phase work remains isolated for v2.0 and v3.0;
+  it is not part of the v1.6 Classic Era data release.
+
 ## v1.5 - European Cup 1961-62
 - Seeded European Cup **1961-62** from RSSSF (James M. Ross): Benfica retained the
   trophy, beating Real Madrid 5-3 in Amsterdam.

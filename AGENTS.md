@@ -27,7 +27,7 @@ This repository contains specialised agent task definitions located in the [`age
    * **Recommended Execution**: Phase 2b, after the database engineer, with golden-data regressions green.
 
 6. **CI/CD Guardian**: [`agents/ci_cd_guardian.md`](agents/ci_cd_guardian.md)
-   * **Mission**: Own GitHub Actions and pull-request verification. Gates are `python build_database.py --force` and `pytest tests/`. Never force-push to `main`; never skip hooks.
+   * **Mission**: Own GitHub Actions and pull-request verification. Gates are `python build_database.py --force` and `python -m pytest -q`. Never force-push to `main`; never skip hooks.
    * **Recommended Execution**: Continuous / DevOps, alongside the GitHub sync manager.
 
 7. **Stats Analyst**: [`agents/stats_analyst.md`](agents/stats_analyst.md)
@@ -35,8 +35,8 @@ This repository contains specialised agent task definitions located in the [`age
    * **Recommended Execution**: Phase 2c, after the database engineer; may run in parallel with the modern era parser.
 
 8. **Classic Era Season Seeder**: [`agents/season_seeder.md`](agents/season_seeder.md)
-   * **Mission**: Continue seeding verified knockout seasons from RSSSF: European Cup 1961-62 onward, Cup Winners' Cup after 1960-61, and Inter-Cities Fairs Cup → UEFA Cup as a new lineage. Must not touch Classic Era golden data (1955-60) and must not implement group/Swiss phases (that is `modern_era_parser.md`).
-   * **Recommended Execution**: After the database engineer; default first target is European Cup 1961-62.
+   * **Mission**: Continue seeding verified knockout seasons from RSSSF: European Cup 1962-63 onward, Cup Winners' Cup after 1960-61, and Inter-Cities Fairs Cup → UEFA Cup as its own lineage. Must not touch Classic Era golden data (1955-60) and must not implement group/Swiss phases (that is `modern_era_parser.md`).
+   * **Recommended Execution**: v1.6, after the database engineer; immediate targets are European Cup 1962-63, Cup Winners' Cup 1961-62, and Inter-Cities Fairs Cup 1955-58.
 
 ---
 
@@ -45,7 +45,7 @@ This repository contains specialised agent task definitions located in the [`age
 When Cloud Agents are available on GitHub (or when this work is provisioned locally and pushed to `origin`), they must:
 
 1. **Author briefs** in [`agents/`](agents/) for every specialised role, including the three modern-era / CI / stats briefs above.
-2. **Author workflows** under [`.github/workflows/`](.github/workflows/), especially [`verify_database.yml`](.github/workflows/verify_database.yml) (`build_database.py --force` + `pytest tests/` on every push and pull request).
+2. **Author workflows** under [`.github/workflows/`](.github/workflows/), especially [`verify_database.yml`](.github/workflows/verify_database.yml) (`python build_database.py --force` + `python -m pytest -q` on every push and pull request).
 3. **Author issue templates** under [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/), especially [`agent_task.yml`](.github/ISSUE_TEMPLATE/agent_task.yml), so tasks can be filed against a role, summary, acceptance criteria, and branch.
 4. **Keep bi-directional `agents/` sync**: briefs authored on GitHub are fetched down to `C:\EuroDatabase\agents/`; locally authored briefs are pushed up to `origin`. Never force-push to `main`.
 

@@ -21,6 +21,7 @@ body:
         - modern_era_parser
         - ci_cd_guardian
         - stats_analyst
+        - season_seeder
     validations:
       required: true
   - type: textarea
@@ -40,6 +41,14 @@ body:
         - [ ] python build_database.py --force succeeds
         - [ ] python -m pytest tests -q passes
         - [ ] Classic Era 1955-60 golden data is unchanged
+    validations:
+      required: true
+  - type: input
+    id: target_release
+    attributes:
+      label: Target release
+      description: Roadmap release that owns this task.
+      placeholder: v1.6
     validations:
       required: true
   - type: input
