@@ -47,6 +47,31 @@ class TestAwayGoalsVerify(unittest.TestCase):
         problems = verify(None, {}, seasons=self._season(tie))
         self.assertTrue(any("AG" in p or "AWAY" in p for p in problems), problems)
 
+    def _season_flag_off(self, tie):
+        return [{
+            "lineage": "European Cup", "season_label": "1955-56", "start_year": 1955,
+            "competition_name": "European Cup",
+            "winner": "a", "runner_up": "b", "away_goals_active": False,
+            "rounds": [{"name": "R", "ties": [tie]}],
+        }]
+
+    def test_away_goals_rejected_when_edition_flag_is_false(self):
+        """The away-goals rule wasn't introduced until 1965-66 - a Classic
+        Era edition (away_goals_active=False) must not settle a tie by it."""
+        tie = {
+            "t1": "a", "t2": "b", "win": "b", "by": "away_goals", "agg": (1, 1),
+            "legs": [("a", "b", 1, 1), ("b", "a", 0, 0)],
+        }
+        problems = verify(None, {}, seasons=self._season_flag_off(tie))
+        self.assertTrue(any("away_goals_active=False" in p for p in problems), problems)
+
+    def test_away_goals_accepted_when_edition_flag_is_true(self):
+        tie = {
+            "t1": "a", "t2": "b", "win": "b", "by": "away_goals", "agg": (1, 1),
+            "legs": [("a", "b", 1, 1), ("b", "a", 0, 0)],
+        }
+        self.assertEqual(verify(None, {}, seasons=self._season(tie)), [])
+
 
 class TestSettlementShapeVerify(unittest.TestCase):
     """Fix A: decided_by must match the legs actually present."""

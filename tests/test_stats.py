@@ -19,8 +19,10 @@ if ROOT not in sys.path:
 from build_database import build
 from queries import (
     classic_era_title_holders,
+    club_campaign,
     club_record,
     connect,
+    edition_chronology,
     edition_goal_stats,
     find_club_id,
     h2h_is_complement,
@@ -30,6 +32,7 @@ from queries import (
     leaderboard_matches,
     leaderboard_titles,
     season_goal_stats,
+    winner_path_club_ids,
 )
 
 
@@ -319,6 +322,118 @@ class TestStats(unittest.TestCase):
         repo_db = os.path.join(ROOT, "european_football.db")
         self.assertNotEqual(os.path.abspath(self.db_path), os.path.abspath(repo_db))
         self.assertTrue(os.path.exists(self.db_path))
+
+    # ----- v1.7: leaderboard wins/gd -------------------------------------
+
+    def test_leaderboard_dispatch_includes_wins_and_gd(self):
+        self.assertTrue(leaderboard(self.cur, "wins"))
+        self.assertTrue(leaderboard(self.cur, "gd"))
+
+    def test_leaderboard_wins_sort_order(self):
+        board = leaderboard(self.cur, "wins")
+        triples = [(r["wins"], r["matches_played"], r["goal_difference"]) for r in board]
+        self.assertEqual(triples, sorted(triples, key=lambda t: (-t[0], -t[1], -t[2])))
+
+    def test_leaderboard_gd_sort_order(self):
+        board = leaderboard(self.cur, "gd")
+        pairs = [r["goal_difference"] for r in board]
+        self.assertEqual(pairs, sorted(pairs, reverse=True))
+
+    # ----- v1.7: club campaign, chronology, winner path ------------------
+
+    def test_benfica_1961_62_campaign_path(self):
+        path = club_campaign(self.cur, self.benfica, "1961-62")
+        rounds_and_opponents = [(t["round_name"], t["opponent"]) for t in path]
+        self.assertEqual(rounds_and_opponents, [
+            ("First Round", "FK Austria Wien"),
+            ("Quarter-Finals", "1. FC Nürnberg"),
+            ("Semi-Finals", "Tottenham Hotspur"),
+            ("Final", "Real Madrid"),
+        ])
+        self.assertTrue(all(t["won"] for t in path))
+
+    def test_campaign_is_empty_for_a_club_not_in_that_season(self):
+        self.assertEqual(club_campaign(self.cur, self.kups, "1961-62"), [])
+
+    def test_campaign_includes_walkover_with_no_legs(self):
+        vorwarts = find_club_id(self.cur, "ASK Vorwärts Berlin")
+        path = club_campaign(self.cur, vorwarts, "1961-62")
+        walkover = next(t for t in path if t["decided_by"] == "walkover")
+        self.assertEqual(walkover["legs"], [])
+
+    def test_1961_62_chronology_matches_dated_match_count(self):
+        eid = self.cur.execute(
+            """SELECT edition_id FROM edition
+                WHERE season_label = '1961-62' AND competition_name = 'European Cup'"""
+        ).fetchone()["edition_id"]
+        sql_count = self.cur.execute(
+            """SELECT COUNT(*) AS n FROM match m
+                 JOIN tie t ON t.tie_id = m.tie_id
+                 JOIN round r ON r.round_id = t.round_id
+                WHERE r.edition_id = ? AND m.match_date IS NOT NULL""",
+            (eid,),
+        ).fetchone()["n"]
+        chron = [c for c in edition_chronology(self.cur, "1961-62")
+                 if c["competition_name"] == "European Cup"]
+        self.assertEqual(len(chron), sql_count)
+
+    def test_chronology_is_ordered_oldest_first(self):
+        chron = edition_chronology(self.cur, "1961-62")
+        dates = [c["date"] for c in chron]
+        self.assertEqual(dates, sorted(dates))
+
+    def test_chronology_unknown_season_raises(self):
+        with self.assertRaises(KeyError):
+            edition_chronology(self.cur, "1899-00")
+
+    def test_winner_path_includes_champion_and_direct_opponents_only(self):
+        eid = self.cur.execute(
+            """SELECT edition_id FROM edition
+                WHERE season_label = '1961-62' AND competition_name = 'European Cup'"""
+        ).fetchone()["edition_id"]
+        ids = winner_path_club_ids(self.cur, eid)
+        self.assertIn(self.benfica, ids)
+        self.assertIn(self.real_madrid, ids)
+        # Gornik Zabrze lost to Tottenham in the First Round - Tottenham later
+        # lost to Benfica, but Gornik never played Benfica directly, so the
+        # (deliberately direct-opponents-only) path excludes them.
+        gornik = find_club_id(self.cur, "Górnik Zabrze")
+        self.assertNotIn(gornik, ids)
+
+    def test_winner_path_empty_when_no_winner_recorded(self):
+        eid = self.cur.execute(
+            "SELECT edition_id FROM edition WHERE winner_club_id IS NULL LIMIT 1"
+        ).fetchone()
+        if eid is None:
+            self.skipTest("every seeded edition already has a winner")
+        self.assertEqual(winner_path_club_ids(self.cur, eid["edition_id"]), set())
+
+    # ----- v1.7: season-scoped hat-trick notes ---------------------------
+
+    def test_club_record_hat_trick_notes_scoped_to_season(self):
+        eid_5960 = self.cur.execute(
+            "SELECT edition_id FROM edition WHERE season_label = '1959-60'"
+        ).fetchone()["edition_id"]
+        match_id = self.cur.execute(
+            """SELECT m.match_id FROM match m
+                 JOIN tie t ON t.tie_id = m.tie_id
+                 JOIN round r ON r.round_id = t.round_id
+                WHERE r.edition_id = ? AND r.name = 'Final'""",
+            (eid_5960,),
+        ).fetchone()["match_id"]
+        self.cur.execute(
+            "UPDATE match SET notes = ? WHERE match_id = ?",
+            ("Di Stefano hat-trick recorded in match notes.", match_id),
+        )
+        try:
+            in_season = club_record(self.cur, self.real_madrid, season_label="1959-60")
+            self.assertEqual(len(in_season["hat_trick_notes"]), 1)
+            other_season = club_record(self.cur, self.real_madrid, season_label="1958-59")
+            self.assertEqual(other_season["hat_trick_notes"], [])
+            all_time = club_record(self.cur, self.real_madrid)
+            self.assertEqual(len(all_time["hat_trick_notes"]), 1)
+        finally:
+            self.cur.execute("UPDATE match SET notes = NULL WHERE match_id = ?", (match_id,))
 
 
 if __name__ == "__main__":

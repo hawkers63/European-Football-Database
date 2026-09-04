@@ -242,8 +242,10 @@ def verify(cur, club_id, seasons=None):
     Beyond the aggregate/away-goals arithmetic, this also catches settlement
     shapes that don't match their decided_by: a one-leg "aggregate" (should be
     a walkover - see the Vorwarts-Linfield 1961-62 fix), a single_match with
-    more than one leg, a replay/coin_toss missing its play-off leg, or a
-    walkover/bye carrying legs or a missing winner.
+    more than one leg, a replay/coin_toss missing its play-off leg, a
+    walkover/bye carrying legs or a missing winner, or a decided_by=away_goals
+    tie in an edition where away_goals_active is False (the rule wasn't
+    introduced until 1965-66).
     """
     problems = []
     for s in (SEASONS if seasons is None else seasons):
@@ -286,6 +288,10 @@ def verify(cur, club_id, seasons=None):
                         problems.append(f'!! WIN  {tag}: higher aggregate is {winner}, data says {win}')
 
                 elif by == "away_goals":
+                    if not s.get("away_goals_active"):
+                        problems.append(
+                            f'!! AG   {tag}: decided_by=away_goals but this edition has '
+                            f'away_goals_active=False (introduced 1965-66)')
                     if ga != gb:
                         problems.append(
                             f'!! AG   {tag}: decided_by=away_goals but aggregate is {ga}-{gb}, not level')

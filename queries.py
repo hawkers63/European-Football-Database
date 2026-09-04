@@ -17,7 +17,7 @@ from typing import Any, Optional, Union
 
 CursorLike = Union[sqlite3.Cursor, sqlite3.Connection]
 
-LEADERBOARD_KINDS = ("titles", "matches", "finals")
+LEADERBOARD_KINDS = ("titles", "matches", "wins", "gd", "finals")
 
 # Documented leaderboard sort orders (British English labels live in the CLI).
 LEADERBOARD_SORT = {
@@ -381,7 +381,16 @@ def club_record(
     rec["highest_scoring_ties"] = highest_scoring_ties(
         db, club_id, season_label=season_label, limit=highest_n,
     )
-    rec["hat_trick_notes"] = hat_trick_notes(db, club_id=club_id)
+    if season_label:
+        # hat_trick_notes(edition_id=) only scopes to one edition, so union
+        # over every edition of this season_label (it may span lineages).
+        rec["hat_trick_notes"] = []
+        for e in editions_for_season(db, season_label):
+            rec["hat_trick_notes"].extend(
+                hat_trick_notes(db, club_id=club_id, edition_id=e["edition_id"])
+            )
+    else:
+        rec["hat_trick_notes"] = hat_trick_notes(db, club_id=club_id)
     cur = _cursor(db)
     sql = """SELECT edition_id, season_label, competition_name, start_year,
                     winner_club_id, runner_up_club_id
@@ -498,6 +507,128 @@ def season_goal_stats(db: CursorLike, season_label: str) -> list:
     if not editions:
         raise KeyError("unknown season %s" % season_label)
     return [edition_goal_stats(db, e["edition_id"]) for e in editions]
+
+
+def club_campaign(db: CursorLike, club_id: int, season_label: str) -> list:
+    """A club's ties in ``season_label``, ordered by competition then round.
+
+    Includes walkovers (no legs). Scorelines are read only from stored match
+    rows - a club that didn't play that season_label gets an empty list, not
+    an error.
+    """
+    get_club(db, club_id)
+    cur = _cursor(db)
+    ties = cur.execute(
+        """SELECT t.tie_id, t.club_a_id, t.club_b_id, t.winner_club_id,
+                  t.decided_by, t.notes,
+                  r.name AS round_name, r.round_order,
+                  e.edition_id, e.season_label, e.competition_name,
+                  l.name AS lineage_name
+             FROM tie t
+             JOIN round r ON r.round_id = t.round_id
+             JOIN edition e ON e.edition_id = r.edition_id
+             JOIN lineage l ON l.lineage_id = e.lineage_id
+            WHERE e.season_label = ?
+              AND (t.club_a_id = ? OR t.club_b_id = ?)
+            ORDER BY e.competition_name, r.round_order, t.tie_id""",
+        (season_label, club_id, club_id),
+    ).fetchall()
+
+    out = []
+    for t in ties:
+        opp_id = t["club_b_id"] if t["club_a_id"] == club_id else t["club_a_id"]
+        legs = cur.execute(
+            """SELECT leg_number, match_date, home_club_id, away_club_id,
+                      home_score, away_score, after_extra_time, venue
+                 FROM match WHERE tie_id = ? ORDER BY leg_number""",
+            (t["tie_id"],),
+        ).fetchall()
+        out.append({
+            "edition_id": t["edition_id"],
+            "competition_name": t["competition_name"],
+            "lineage_name": t["lineage_name"],
+            "season_label": t["season_label"],
+            "round_name": t["round_name"],
+            "round_order": t["round_order"],
+            "opponent_id": opp_id,
+            "opponent": get_club_display_name(cur, opp_id, t["edition_id"]),
+            "won": t["winner_club_id"] == club_id,
+            "decided_by": t["decided_by"],
+            "notes": t["notes"],
+            "legs": [
+                {
+                    "leg_number": m["leg_number"],
+                    "date": m["match_date"],
+                    "home": get_club_display_name(cur, m["home_club_id"], t["edition_id"]),
+                    "away": get_club_display_name(cur, m["away_club_id"], t["edition_id"]),
+                    "home_score": m["home_score"],
+                    "away_score": m["away_score"],
+                    "after_extra_time": bool(m["after_extra_time"]),
+                    "venue": m["venue"],
+                }
+                for m in legs
+            ],
+        })
+    return out
+
+
+def edition_chronology(db: CursorLike, season_label: str) -> list:
+    """Matches in ``season_label`` with a stored date, oldest first.
+
+    Undated matches are omitted rather than guessed; pair with
+    ``editions_for_season`` if you also want a dated/total coverage count.
+    """
+    cur = _cursor(db)
+    if not editions_for_season(db, season_label):
+        raise KeyError("unknown season %s" % season_label)
+    rows = cur.execute(
+        _MATCH_SELECT + """
+         WHERE e.season_label = ?
+           AND m.match_date IS NOT NULL
+         ORDER BY m.match_date, r.round_order, m.leg_number, m.match_id""",
+        (season_label,),
+    ).fetchall()
+    return [{
+        "match_id": m["match_id"],
+        "date": m["match_date"],
+        "competition_name": m["competition_name"],
+        "lineage_name": m["lineage_name"],
+        "round_name": m["round_name"],
+        "leg_number": m["leg_number"],
+        "home": get_club_display_name(cur, m["home_club_id"], m["edition_id"]),
+        "away": get_club_display_name(cur, m["away_club_id"], m["edition_id"]),
+        "home_score": m["home_score"],
+        "away_score": m["away_score"],
+        "after_extra_time": bool(m["after_extra_time"]),
+        "venue": m["venue"],
+    } for m in rows]
+
+
+def winner_path_club_ids(db: CursorLike, edition_id: int) -> set:
+    """Club IDs on the champion's route through ``edition_id``, champion included.
+
+    Empty set when the edition has no recorded winner (e.g. not yet decided).
+    """
+    cur = _cursor(db)
+    ed = cur.execute(
+        "SELECT winner_club_id FROM edition WHERE edition_id = ?",
+        (edition_id,),
+    ).fetchone()
+    if not ed or not ed["winner_club_id"]:
+        return set()
+    champ = ed["winner_club_id"]
+    rows = cur.execute(
+        """SELECT t.club_a_id, t.club_b_id
+             FROM tie t
+             JOIN round r ON r.round_id = t.round_id
+            WHERE r.edition_id = ? AND t.winner_club_id = ?""",
+        (edition_id, champ),
+    ).fetchall()
+    ids = {champ}
+    for t in rows:
+        ids.add(t["club_a_id"])
+        ids.add(t["club_b_id"])
+    return ids
 
 
 def head_to_head(db: CursorLike, club_a_id: int, club_b_id: int) -> dict:
