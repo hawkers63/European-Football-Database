@@ -20,4 +20,7 @@ desktop.ini
 # Staging scratch directories
 _staging/
 
+# Nested git worktrees (fairs-cup, parser, etc.)
+.worktrees/
+
 
