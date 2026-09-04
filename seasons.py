@@ -523,9 +523,12 @@ SEASONS = [
                 {"t1": "standard", "t2": "fredrikstad", "win": "standard", "by": "aggregate", "agg": (4, 1),
                  "legs": [L("standard", "fredrikstad", 2, 1, date="1961-09-06"),
                           L("fredrikstad", "standard", 0, 2, venue="Oslo (2nd leg relocated)", date="1961-09-20")]},
-                {"t1": "vorwarts", "t2": "linfield", "win": "vorwarts", "by": "aggregate", "agg": (3, 0),
-                 "legs": [L("vorwarts", "linfield", 3, 0, date="1961-08-30")],
-                 "note": "Linfield withdrew after the 1st leg. Vorwärts were denied UK visas and Linfield could not afford to travel to an alternative venue."},
+                {"t1": "vorwarts", "t2": "linfield", "win": "vorwarts", "by": "walkover", "agg": None,
+                 "legs": [],
+                 "note": "Linfield withdrew after a 3-0 first leg (1961-08-30). Vorwärts were denied "
+                         "UK visas and Linfield could not afford to travel to an alternative venue. "
+                         "RSSSF records the played 3-0, but with only one leg contested it is stored "
+                         "here as a walkover rather than a completed two-leg aggregate."},
                 {"t1": "monaco", "t2": "rangers", "win": "rangers", "by": "aggregate", "agg": (4, 6),
                  "legs": [L("monaco", "rangers", 2, 3, date="1961-09-05"),
                           L("rangers", "monaco", 3, 2, date="1961-09-12")]},

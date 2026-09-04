@@ -106,9 +106,11 @@ class TestSeasons196162(unittest.TestCase):
                     found = tie
         self.assertIsNotNone(found)
         self.assertEqual(found["win"], "vorwarts")
-        self.assertEqual(found["agg"], (3, 0))
-        self.assertEqual(len(found["legs"]), 1)
+        self.assertEqual(found["by"], "walkover")
+        self.assertIsNone(found["agg"])
+        self.assertEqual(len(found["legs"]), 0)
         self.assertIn("withdrew", found["note"].lower())
+        self.assertIn("3-0", found["note"])
 
 
 class TestClassicEraGoldenUnchanged(unittest.TestCase):

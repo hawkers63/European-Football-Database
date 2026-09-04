@@ -10,7 +10,7 @@ stages and the modern league phase.
 The v1.5 working baseline contains:
 
 - 2 seeded competition lineages, 8 editions and 99 canonical clubs;
-- 38 rounds, 176 ties and 352 matches;
+- 38 rounds, 176 ties and 351 matches;
 - European Cup coverage from **1955-56 through 1961-62**;
 - the inaugural European Cup Winners' Cup **1960-61**;
 - an Inter-Cities Fairs Cup lineage definition ready for its first edition;

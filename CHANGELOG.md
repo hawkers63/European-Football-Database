@@ -1,6 +1,12 @@
 # Changelog
 
 ## Unreleased - v1.6 Classic competitions expansion
+- Fixed the Vorwärts–Linfield 1961-62 Preliminary tie: it was stored as
+  `decided_by=aggregate` with a single leg, which `verify()` could not catch
+  (aggregate checks only sum legs, they don't require two of them). Now
+  modelled as a walkover with zero legs, matching every other withdrawal in
+  the dataset; the played 3-0 stays recorded in the tie's note. Match count
+  drops from 352 to 351 accordingly.
 - Established v1.5 as the completed working baseline and reconciled README,
   roadmap, release gates and agent task metadata with the live repository.
 - Next data targets are European Cup **1962-63**, Cup Winners' Cup **1961-62**

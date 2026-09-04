@@ -19,7 +19,7 @@ they remain outside the baseline until the v2.0 integration gates are met.
 
 - 2 seeded trophy lineages and 8 complete editions
 - 99 canonical clubs across 29 historical association codes
-- 38 rounds, 176 ties and 352 matches
+- 38 rounds, 176 ties and 351 matches
 - Full match dates for the European Cup 1961-62; selected dates, venues,
   attendances and referees for earlier editions
 - 112 passing automated tests at the v1.5 baseline
@@ -36,7 +36,7 @@ they remain outside the baseline until the v2.0 integration gates are met.
 | `ui/` | Modular widgets, yearbook palette, and batched data loaders. |
 | `queries.py`, `cli.py` | Shared statistics plus club, head-to-head, goals, leaderboard, season and JSON commands. |
 | `tools/import_rsssf.py` | Drafts season data from pasted RSSSF result lines and checks aggregates. |
-| `european_football.db` | Generated database (99 clubs, 8 editions, 176 ties, 352 matches). |
+| `european_football.db` | Generated database (99 clubs, 8 editions, 176 ties, 351 matches). |
 | `ROADMAP.md`, `DATA_GUIDE.md`, `CHANGELOG.md` | Plan, how to add a season, history. |
 
 ## Running it
