@@ -31,7 +31,7 @@ class ClubProfileDialog(_Base):
         except Exception:
             pass
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(3, weight=1)
+        self.grid_rowconfigure(4, weight=1)
         self._build(profile)
         try:
             self.grab_set()
@@ -109,8 +109,12 @@ class ClubProfileDialog(_Base):
                 font=ctk.CTkFont(size=11),
             ).pack()
 
+        campaign = profile.get("campaign")
+        if campaign:
+            self._build_campaign(profile.get("campaign_season_label"), campaign)
+
         history = ctk.CTkScrollableFrame(self, corner_radius=8)
-        history.grid(row=3, column=0, sticky="nsew", padx=20, pady=(0, 16))
+        history.grid(row=4, column=0, sticky="nsew", padx=20, pady=(0, 16))
         history.grid_columnconfigure(0, weight=1)
         ctk.CTkLabel(
             history, text="Match history",
@@ -126,6 +130,38 @@ class ClubProfileDialog(_Base):
             return
         for i, m in enumerate(matches, start=1):
             self._match_row(history, m, i)
+
+    def _build_campaign(self, season_label, campaign):
+        """This-season campaign path (queries.club_campaign), round by round."""
+        c = self._colours
+        fr = ctk.CTkFrame(self, fg_color=c["card"], corner_radius=8)
+        fr.grid(row=3, column=0, sticky="ew", padx=20, pady=(0, 12))
+        ctk.CTkLabel(
+            fr, text="Campaign · %s" % (season_label or ""),
+            text_color=c["dim"], font=ctk.CTkFont(size=11, weight="bold"),
+            anchor="w",
+        ).pack(padx=12, pady=(8, 4), anchor="w")
+        for tie in campaign:
+            row = ctk.CTkFrame(fr, fg_color="transparent")
+            row.pack(fill="x", padx=12, pady=2)
+            won = tie.get("won")
+            ctk.CTkLabel(
+                row, text="%s: vs %s" % (
+                    tie.get("round_name") or "?", tie.get("opponent") or "?"),
+                font=ctk.CTkFont(size=12, weight="bold"), anchor="w",
+            ).pack(side="left")
+            ctk.CTkLabel(
+                row, text="WON" if won else "lost",
+                text_color=c["win"] if won else c["dim"],
+                font=ctk.CTkFont(size=11, weight="bold"), anchor="e",
+            ).pack(side="right")
+            if tie.get("notes"):
+                ctk.CTkLabel(
+                    fr, text=tie["notes"], text_color=c["dim"],
+                    font=ctk.CTkFont(size=11), anchor="w",
+                    wraplength=640, justify="left",
+                ).pack(padx=12, pady=(0, 2), anchor="w")
+        ctk.CTkFrame(fr, fg_color="transparent", height=4).pack()
 
     def _match_row(self, parent, m, row):
         c = self._colours

@@ -64,12 +64,20 @@ def _pill(parent, text, fg, text_color, font_size=11):
     return frame
 
 
-def render_tie_card(parent, tie, clubs, colours, on_club=None, row=0):
-    """Build a rich fixture card. Returns the card frame."""
+def render_tie_card(parent, tie, clubs, colours, on_club=None, row=0, highlight=False):
+    """Build a rich fixture card. Returns the card frame.
+
+    ``highlight`` marks a tie on the champion's route (both sides in
+    queries.winner_path_club_ids) with a victory-green border accent.
+    """
     if ctk is None:
         raise RuntimeError("CustomTkinter is not installed.")
 
-    card = ctk.CTkFrame(parent, fg_color=colours["card"], corner_radius=8)
+    card_kwargs = {"fg_color": colours["card"], "corner_radius": 8}
+    if highlight:
+        card_kwargs["border_width"] = 2
+        card_kwargs["border_color"] = colours["win"]
+    card = ctk.CTkFrame(parent, **card_kwargs)
     card.grid(row=row, column=0, sticky="ew", pady=4)
     card.grid_columnconfigure(0, weight=1)
 

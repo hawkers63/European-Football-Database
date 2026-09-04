@@ -13,10 +13,12 @@ if ROOT not in sys.path:
 
 import app
 from ui.data import (
+    fetch_club_profile,
     fetch_edition_payload,
     load_club_cache,
     map_feeders,
     organise_bracket_columns,
+    tie_on_winner_path,
 )
 from ui.formatters import missing_database_message
 
@@ -186,6 +188,65 @@ class TestDisplayNameCache(unittest.TestCase):
                 [c["round_order"] for c in cols],
                 [r["round_order"] for r in payload["rounds"]],
             )
+
+
+class TestWinnerPathHighlight(unittest.TestCase):
+    """Display-free logic behind the fixtures-list / bracket green-border
+    highlight - no CTk widgets here, CI has no display for that."""
+
+    def test_both_sides_on_path_is_highlighted(self):
+        tie = {"club_a_id": 1, "club_b_id": 2}
+        self.assertTrue(tie_on_winner_path(tie, {1, 2, 3}))
+
+    def test_one_side_on_path_is_not_highlighted(self):
+        tie = {"club_a_id": 1, "club_b_id": 99}
+        self.assertFalse(tie_on_winner_path(tie, {1, 2, 3}))
+
+    def test_neither_side_on_path_is_not_highlighted(self):
+        tie = {"club_a_id": 98, "club_b_id": 99}
+        self.assertFalse(tie_on_winner_path(tie, {1, 2, 3}))
+
+    def test_empty_path_set_never_highlights(self):
+        tie = {"club_a_id": 1, "club_b_id": 2}
+        self.assertFalse(tie_on_winner_path(tie, set()))
+        self.assertFalse(tie_on_winner_path(tie, None))
+
+
+class TestClubProfileCampaignWiring(unittest.TestCase):
+    """fetch_club_profile()'s optional season_label wiring (queries.club_campaign)."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.db = os.path.join(ROOT, "european_football.db")
+        if not os.path.exists(cls.db):
+            raise unittest.SkipTest("european_football.db is not built")
+        cls.conn = app.connect(cls.db)
+        cls.cur = cls.conn.cursor()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.conn.close()
+
+    def _benfica_id(self):
+        return self.cur.execute(
+            "SELECT club_id FROM club WHERE name = 'SL Benfica'"
+        ).fetchone()[0]
+
+    def test_no_season_label_omits_campaign(self):
+        profile = fetch_club_profile(self.cur, self._benfica_id())
+        self.assertNotIn("campaign", profile)
+
+    def test_season_label_adds_matching_campaign(self):
+        from queries import club_campaign
+        cid = self._benfica_id()
+        profile = fetch_club_profile(self.cur, cid, season_label="1961-62")
+        self.assertEqual(profile["campaign_season_label"], "1961-62")
+        self.assertEqual(profile["campaign"], club_campaign(self.cur, cid, "1961-62"))
+        self.assertTrue(profile["campaign"])
+
+    def test_season_with_no_ties_gives_empty_campaign(self):
+        profile = fetch_club_profile(self.cur, self._benfica_id(), season_label="1899-00")
+        self.assertEqual(profile["campaign"], [])
 
 
 class TestLayoutSourceStillPinned(unittest.TestCase):

@@ -10,7 +10,7 @@ try:
 except ImportError:
     ctk = None
 
-from ui.data import layout_bracket_positions, organise_bracket_columns
+from ui.data import layout_bracket_positions, organise_bracket_columns, tie_on_winner_path
 from ui.formatters import (
     DECISION_TAG,
     _field,
@@ -38,6 +38,7 @@ class BracketView(_Base):
         self._clubs = {}
         self._columns = []
         self._payload = None
+        self._path_ids = set()
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
         self._build()
@@ -76,9 +77,10 @@ class BracketView(_Base):
         self._colours = colours
         self._paint()
 
-    def populate(self, payload, query=""):
+    def populate(self, payload, query="", path_ids=None):
         self._payload = payload
         self._clubs = (payload or {}).get("clubs") or {}
+        self._path_ids = path_ids or set()
         rounds = list((payload or {}).get("rounds") or [])
         if query:
             filtered = []
@@ -158,10 +160,16 @@ class BracketView(_Base):
         blob = " ".join((a_name, b_name, a_cc, b_cc)).casefold()
         match = (not query) or (query in blob)
         fill = c["node"] if match else c["head"]
-        outline = c["gold"] if match and query else c["border"]
+        on_path = tie_on_winner_path(tie, self._path_ids)
+        if match and query:
+            outline, width = c["gold"], 2
+        elif on_path:
+            outline, width = c["win"], 3
+        else:
+            outline, width = c["border"], 2
         self.canvas.create_rectangle(
             x, y, x + NODE_W, y + NODE_H,
-            fill=fill, outline=outline, width=2, tags=("node",))
+            fill=fill, outline=outline, width=width, tags=("node",))
         winner = tie.get("winner_club_id")
         a_fill = c["win"] if winner == tie.get("club_a_id") else c["text"]
         b_fill = c["win"] if winner == tie.get("club_b_id") else c["text"]

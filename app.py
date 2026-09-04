@@ -53,7 +53,9 @@ from ui.data import (
     fetch_edition_payload,
     final_score_text,
     tie_matches_query,
+    tie_on_winner_path,
 )
+from queries import winner_path_club_ids
 from ui.header import BRACKET_LABEL, FIXTURES_LABEL, HeaderBar
 from ui.sidebar import Sidebar
 from ui.tie_card import render_tie_card
@@ -81,6 +83,7 @@ class App(ctk.CTk if ctk is not None else object):
         self._appearance = "dark"
         self._ignore_menu = 0
         self._payload = None
+        self._winner_path_ids = set()
         self._club_names = {}
         self._view = FIXTURES_LABEL
         self._search = ""
@@ -223,6 +226,7 @@ class App(ctk.CTk if ctk is not None else object):
         # Canonical names (test-pinned helper) plus the richer per-edition cache.
         self._club_names = load_club_name_cache(self.cur)
         self._payload = fetch_edition_payload(self.cur, edition_id)
+        self._winner_path_ids = winner_path_club_ids(self.cur, edition_id)
         clubs = self._payload["clubs"]
         for cid, info in clubs.items():
             self._club_names[cid] = info.get("display_name") or info.get("name")
@@ -261,7 +265,7 @@ class App(ctk.CTk if ctk is not None else object):
         if show_bracket:
             self.scroll.grid_remove()
             self.bracket.grid(row=1, column=1, sticky="nsew", padx=16, pady=(0, 16))
-            self.bracket.populate(self._payload, self._search)
+            self.bracket.populate(self._payload, self._search, path_ids=self._winner_path_ids)
         else:
             self.bracket.grid_remove()
             self.scroll.grid()
@@ -286,15 +290,17 @@ class App(ctk.CTk if ctk is not None else object):
             ).grid(row=r, column=0, sticky="ew", pady=(14, 6))
             r += 1
             for tie in ties:
+                on_path = tie_on_winner_path(tie, self._winner_path_ids)
                 render_tie_card(
                     self.scroll, tie, clubs, self._colours,
-                    on_club=self._open_club, row=r)
+                    on_club=self._open_club, row=r, highlight=on_path)
                 r += 1
 
     def _open_club(self, club_id):
         if self.cur is None or club_id is None:
             return
-        profile = fetch_club_profile(self.cur, club_id)
+        season_label = (self._payload or {}).get("edition", {}).get("season_label")
+        profile = fetch_club_profile(self.cur, club_id, season_label=season_label)
         ClubProfileDialog(self, profile, self._colours)
 
 

@@ -11,6 +11,7 @@ from __future__ import annotations
 import sqlite3
 from typing import Any, Iterable, Mapping, Optional, Union
 
+from queries import club_campaign as _club_campaign
 from ui.formatters import (
     _field,
     aggregate_from_matches,
@@ -183,6 +184,18 @@ def final_score_text(payload: Mapping) -> str:
     return format_score_header(ga, gb, tie.get("decided_by"), tie.get("matches") or [])
 
 
+def tie_on_winner_path(tie: Mapping, path_ids) -> bool:
+    """True when both sides of ``tie`` are in ``winner_path_club_ids()``'s set.
+
+    In a knockout, that only ever happens for the champion's own ties (an
+    eliminated side can't reappear against another of the champion's
+    opponents), so this is a safe way to highlight the champion's route.
+    """
+    if not path_ids:
+        return False
+    return tie.get("club_a_id") in path_ids and tie.get("club_b_id") in path_ids
+
+
 def tie_matches_query(tie: Mapping, clubs: Mapping, query: str) -> bool:
     """True when the in-memory tie matches a club/notes search string."""
     if not query or not str(query).strip():
@@ -307,11 +320,16 @@ def layout_bracket_positions(columns: list, slot_h: int = 72, top: int = 24) -> 
     return ys_all
 
 
-def fetch_club_profile(db: CursorLike, club_id: int) -> dict:
+def fetch_club_profile(db: CursorLike, club_id: int, season_label: Optional[str] = None) -> dict:
     """Batch-load a club profile: aliases, record, titles, match history.
 
     Four statements total (club row, history, tie record + titles, matches).
     No per-match follow-up queries.
+
+    When ``season_label`` is given (the currently loaded season), also
+    includes ``"campaign"``: that club's round-by-round path through it,
+    via the shared ``queries.club_campaign`` helper - empty if the club
+    didn't play that season.
     """
     cur = _cursor(db)
     club = row_as_dict(cur.execute(
@@ -396,7 +414,7 @@ def fetch_club_profile(db: CursorLike, club_id: int) -> dict:
                 name = display_by_season[(cid, sl)]
             m[out_key] = name
 
-    return {
+    profile = {
         "club": club,
         "aliases": aliases,
         "ties_played": rec.get("ties_played") or 0,
@@ -406,3 +424,7 @@ def fetch_club_profile(db: CursorLike, club_id: int) -> dict:
         "runner_up_finishes": rec.get("runner_up_finishes") or 0,
         "matches": matches,
     }
+    if season_label:
+        profile["campaign"] = _club_campaign(cur, club_id, season_label)
+        profile["campaign_season_label"] = season_label
+    return profile
