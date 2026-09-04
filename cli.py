@@ -317,10 +317,15 @@ def cmd_season(args):
                 win = (get_club_display_name(cur, tie["winner_club_id"], e["edition_id"])
                        if tie["winner_club_id"] else "-")
                 print("    %s vs %s  [%s] -> %s" % (a, b, tie["decided_by"] or "?", win))
-                for m in cur.execute(
+                # fetchall() first - get_club_display_name() below reuses this
+                # same cursor, which would otherwise truncate the live
+                # cur.execute() iteration after the first leg (see the
+                # identical bug already fixed in _export_edition()).
+                matches = cur.execute(
                     """SELECT * FROM match WHERE tie_id = ? ORDER BY leg_number""",
                     (tie["tie_id"],),
-                ):
+                ).fetchall()
+                for m in matches:
                     hn = get_club_display_name(cur, m["home_club_id"], e["edition_id"])
                     an = get_club_display_name(cur, m["away_club_id"], e["edition_id"])
                     print("      L%d: %s %s-%s %s" % (

@@ -1,6 +1,30 @@
 # Changelog
 
 ## Unreleased - v1.6 Classic competitions expansion
+- Seeded and verified the inaugural Inter-Cities Fairs Cup **1955-58** (third
+  and final v1.6 target edition): FC Barcelona beat London XI 8-2 on
+  aggregate over a two-legged final. Sourced directly from RSSSF
+  (`rsssf.org/ec/ec195758.html#icfc`). The lineage's first-ever edition
+  turns the previously-empty menu entry (fixed earlier in v1.6) into a real
+  competition. 9 new canonical clubs, several of them ad-hoc city
+  representative XIs (the original Fairs Cup premise, before it settled
+  into a normal club competition) rather than ordinary clubs.
+  - The First Round was four small groups, not a straight knockout - two
+    groups reduced to a single played tie after a third entrant withdrew
+    without playing (Vienna XI, Cologne XI - named in prose only, no club
+    registry entry since they never appear in a match); the other two were
+    3-way round-robins, one producing two genuine drawn ties (`win=None`
+    under `by="aggregate"`, already a supported shape).
+  - `season_label="1955-58"` is the first multi-year label in the dataset;
+    confirmed nothing in build/query/UI code parses its format beyond
+    exact-match comparison, so no schema or code change was needed for it.
+  - `lineage=3, club=130, edition=11, round=51, tie=238, match=477`.
+- **Found and fixed** while exercising the CLI on this data: `cmd_season()`
+  had the exact cursor-reuse bug already fixed in `_export_edition()` -
+  `get_club_display_name()` reused the same cursor mid-iteration over a
+  tie's legs, so `python cli.py season` only ever printed a tie's first
+  leg regardless of how many it actually had. This affected every
+  multi-leg tie already in the database, not just the new data.
 - Seeded and verified European Cup **1962-63** (second of the three v1.6
   target editions): AC Milan won their first European Cup, beating holders
   Benfica 2-1 at Wembley. Sourced directly from RSSSF

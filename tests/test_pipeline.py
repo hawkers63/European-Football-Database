@@ -182,6 +182,30 @@ class TestCliHelp(unittest.TestCase):
 
 
 @unittest.skipUnless(os.path.exists(DB_PATH), "european_football.db not built yet")
+class TestCmdSeasonLegDisplay(unittest.TestCase):
+    """cmd_season()'s per-leg loop reused one cursor with get_club_display_name()
+    inside it, the same bug already fixed in _export_edition() - it silently
+    printed only "L1" for every tie regardless of how many legs it had."""
+
+    def test_three_leg_replay_prints_all_three_legs(self):
+        import io
+        from contextlib import redirect_stdout
+        import cli
+
+        out = io.StringIO()
+        with redirect_stdout(out):
+            cli.main(["season", "1955-58"])
+        text = out.getvalue()
+        # Birmingham City v Barcelona semi-final: two legs plus a play-off.
+        start = text.index("Birmingham City vs")
+        end = text.index("\n\n", start)
+        block = text[start:end]
+        self.assertIn("L1:", block)
+        self.assertIn("L2:", block)
+        self.assertIn("L3:", block)
+
+
+@unittest.skipUnless(os.path.exists(DB_PATH), "european_football.db not built yet")
 class TestExportEdition(unittest.TestCase):
     """_export_edition() used to reuse one cursor across nested loops and the
     get_club_display_name() lookups inside them, silently truncating results -

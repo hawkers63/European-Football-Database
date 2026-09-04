@@ -828,4 +828,68 @@ SEASONS = [
         ],
     },
 
+    # =====================================================================
+    # 1955-58 — inaugural Inter-Cities Fairs Cup: Barcelona win a three-year
+    # competition originally for cities that hosted international trade fairs
+    # =====================================================================
+    {
+        "lineage": "Inter-Cities Fairs Cup", "season_label": "1955-58", "start_year": 1955,
+        "competition_name": "Inter-Cities Fairs Cup",
+        "winner": "barcelona", "runner_up": "london_xi", "away_goals_active": False,
+        "notes": "The inaugural Fairs Cup, run over three years (1955-58) because fixtures were "
+                 "hard to schedule around the participants' domestic seasons. Entrants were drawn "
+                 "from cities that hosted international trade fairs, mixing real clubs with ad-hoc "
+                 "representative XI selections, and the First Round was four small groups rather "
+                 "than a straight knockout. Vienna XI and Cologne XI withdrew from their groups "
+                 "(A and C) without playing a match.",
+        "rounds": [
+            {"name": "First Round", "ties": [
+                {"t1": "barcelona", "t2": "kbu_copenhagen", "win": "barcelona", "by": "aggregate", "agg": (7, 3),
+                 "note": "Group A. Vienna XI withdrew without playing; Barcelona advanced as the "
+                         "only remaining entrant.",
+                 "legs": [L("barcelona", "kbu_copenhagen", 6, 2), L("kbu_copenhagen", "barcelona", 1, 1)]},
+                {"t1": "inter_milan", "t2": "birmingham", "win": "birmingham", "by": "aggregate", "agg": (1, 2),
+                 "note": "Group B (round-robin of three). Birmingham City won both their ties to "
+                         "top the group.",
+                 "legs": [L("inter_milan", "birmingham", 0, 0), L("birmingham", "inter_milan", 2, 1)]},
+                {"t1": "zagreb_xi", "t2": "birmingham", "win": "birmingham", "by": "aggregate", "agg": (0, 4),
+                 "note": "Group B (round-robin of three).",
+                 "legs": [L("zagreb_xi", "birmingham", 0, 1), L("birmingham", "zagreb_xi", 3, 0)]},
+                {"t1": "zagreb_xi", "t2": "inter_milan", "win": "inter_milan", "by": "aggregate", "agg": (0, 5),
+                 "note": "Group B (round-robin of three).",
+                 "legs": [L("zagreb_xi", "inter_milan", 0, 1), L("inter_milan", "zagreb_xi", 4, 0)]},
+                {"t1": "leipzig_xi", "t2": "lausanne", "win": "lausanne", "by": "aggregate", "agg": (9, 10),
+                 "note": "Group C. Cologne XI withdrew without playing; Lausanne-Sports advanced "
+                         "after winning this tie.",
+                 "legs": [L("leipzig_xi", "lausanne", 6, 3), L("lausanne", "leipzig_xi", 7, 3)]},
+                {"t1": "basel_xi", "t2": "london_xi", "win": "london_xi", "by": "aggregate", "agg": (0, 6),
+                 "note": "Group D (round-robin of three). London XI topped the group on points "
+                         "(one win, one draw).",
+                 "legs": [L("basel_xi", "london_xi", 0, 5), L("london_xi", "basel_xi", 1, 0)]},
+                {"t1": "london_xi", "t2": "frankfurt_xi", "win": None, "by": "aggregate", "agg": (3, 3),
+                 "note": "Group D (round-robin of three); drawn on aggregate.",
+                 "legs": [L("london_xi", "frankfurt_xi", 3, 2), L("frankfurt_xi", "london_xi", 1, 0)]},
+                {"t1": "frankfurt_xi", "t2": "basel_xi", "win": None, "by": "aggregate", "agg": (7, 7),
+                 "note": "Group D (round-robin of three); drawn on aggregate.",
+                 "legs": [L("frankfurt_xi", "basel_xi", 5, 1), L("basel_xi", "frankfurt_xi", 6, 2)]},
+            ]},
+            {"name": "Semi-Finals", "ties": [
+                {"t1": "birmingham", "t2": "barcelona", "win": "barcelona", "by": "replay", "agg": (4, 4),
+                 "legs": [L("birmingham", "barcelona", 4, 3), L("barcelona", "birmingham", 1, 0),
+                          L("birmingham", "barcelona", 1, 2, venue="Basel (play-off)")]},
+                {"t1": "lausanne", "t2": "london_xi", "win": "london_xi", "by": "aggregate", "agg": (2, 3),
+                 "legs": [L("lausanne", "london_xi", 2, 1), L("london_xi", "lausanne", 2, 0)]},
+            ]},
+            {"name": "Final", "ties": [
+                {"t1": "london_xi", "t2": "barcelona", "win": "barcelona", "by": "aggregate", "agg": (2, 8),
+                 "legs": [
+                     L("london_xi", "barcelona", 2, 2, venue="Stamford Bridge, London",
+                       date="1958-03-05", att=45466, ref="Albert Dusch (West Germany)"),
+                     L("barcelona", "london_xi", 6, 0, venue="Camp Nou, Barcelona",
+                       date="1958-05-01", att=62000, ref="Albert Dusch (West Germany)"),
+                 ]},
+            ]},
+        ],
+    },
+
 ]

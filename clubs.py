@@ -184,6 +184,25 @@ CLUBS = {
     "koln":          {"name": "1. FC Köln",            "country": "FRG", "city": "Cologne"},
     "esbjerg":       {"name": "Esbjerg fB",            "country": "DEN", "city": "Esbjerg"},
     "partizani_tirana": {"name": "FK Partizani Tiranë", "country": "ALB", "city": "Tirana"},
+
+    # --- added 1955-58 Inter-Cities Fairs Cup (inaugural) -------------------
+    # The inaugural Fairs Cup mixed real clubs with ad-hoc city/representative
+    # XI selections (its original premise: one team per trade-fair city).
+    "kbu_copenhagen": {"name": "KBU (København) XI",   "country": "DEN", "city": "Copenhagen",
+                      "notes": "Representative selection of the Copenhagen football union."},
+    "birmingham":    {"name": "Birmingham City",       "country": "ENG", "city": "Birmingham"},
+    "zagreb_xi":     {"name": "Zagreb XI",             "country": "YUG", "city": "Zagreb",
+                      "notes": "City representative selection, distinct from Dinamo Zagreb."},
+    "inter_milan":   {"name": "Internazionale",        "country": "ITA", "city": "Milan"},
+    "leipzig_xi":    {"name": "Leipzig XI",            "country": "GDR", "city": "Leipzig",
+                      "notes": "City representative selection."},
+    "lausanne":      {"name": "Lausanne-Sports",       "country": "SUI", "city": "Lausanne"},
+    "london_xi":     {"name": "London XI",             "country": "ENG", "city": "London",
+                      "notes": "Representative selection drawn from London's English League clubs."},
+    "basel_xi":      {"name": "Basel XI",              "country": "SUI", "city": "Basel",
+                      "notes": "City representative selection."},
+    "frankfurt_xi":  {"name": "Frankfurt XI",          "country": "FRG", "city": "Frankfurt",
+                      "notes": "City representative selection, distinct from Eintracht Frankfurt."},
 }
 
 

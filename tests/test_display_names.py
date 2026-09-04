@@ -227,6 +227,68 @@ class TestEC196263(unittest.TestCase):
         self.assertGreaterEqual(relocated, 2)
 
 
+class TestFairsCup195558(unittest.TestCase):
+    def _fc(self):
+        hits = [s for s in SEASONS
+                if s["season_label"] == "1955-58" and s["lineage"] == "Inter-Cities Fairs Cup"]
+        self.assertEqual(len(hits), 1)
+        return hits[0]
+
+    def _tie(self, s, a, b):
+        for rnd in s["rounds"]:
+            for tie in rnd["ties"]:
+                if {tie["t1"], tie["t2"]} == {a, b}:
+                    return tie
+        return None
+
+    def test_champion_and_runner_up(self):
+        s = self._fc()
+        self.assertEqual(s["winner"], "barcelona")
+        self.assertEqual(s["runner_up"], "london_xi")
+        self.assertFalse(s["away_goals_active"])
+
+    def test_final_was_two_legged_unlike_other_finals_this_era(self):
+        """Barcelona 2-2 London XI at Stamford Bridge, then 6-0 at Camp Nou -
+        8-2 on aggregate, matching RSSSF's own stated result."""
+        s = self._fc()
+        found = self._tie(s, "london_xi", "barcelona")
+        self.assertIsNotNone(found)
+        self.assertEqual(found["by"], "aggregate")
+        self.assertEqual(found["agg"], (2, 8))
+        self.assertEqual(found["win"], "barcelona")
+        self.assertEqual(len(found["legs"]), 2)
+
+    def test_group_a_barcelona_qualified_after_a_withdrawal(self):
+        s = self._fc()
+        found = self._tie(s, "barcelona", "kbu_copenhagen")
+        self.assertIsNotNone(found)
+        self.assertEqual(found["agg"], (7, 3))
+        self.assertEqual(found["win"], "barcelona")
+        self.assertIn("withdrew", found["note"].lower())
+
+    def test_group_d_round_robin_has_two_genuine_draws(self):
+        """London XI topped Group D on points despite drawing twice - neither
+        drawn tie has (or needs) a winner."""
+        s = self._fc()
+        drawn = [
+            self._tie(s, "london_xi", "frankfurt_xi"),
+            self._tie(s, "frankfurt_xi", "basel_xi"),
+        ]
+        for tie in drawn:
+            self.assertIsNotNone(tie)
+            self.assertIsNone(tie["win"])
+            self.assertEqual(tie["agg"][0], tie["agg"][1])
+
+    def test_semi_final_needed_a_genuine_playoff(self):
+        s = self._fc()
+        found = self._tie(s, "birmingham", "barcelona")
+        self.assertIsNotNone(found)
+        self.assertEqual(found["by"], "replay")
+        self.assertEqual(found["agg"], (4, 4))
+        self.assertEqual(len(found["legs"]), 3)
+        self.assertEqual(found["win"], "barcelona")
+
+
 class TestClassicEraGoldenUnchanged(unittest.TestCase):
     def test_five_in_a_row_champions(self):
         expected = {
@@ -304,21 +366,21 @@ class TestDisplayNameAgainstDb(unittest.TestCase):
         self.assertIn("European Cup Winners' Cup", names)
 
     def test_all_configured_lineages_inserted(self):
-        """Inter-Cities Fairs Cup has no seeded edition yet but is still a
-        configured LINEAGES entry - it must exist in the table so the UI/CLI
-        can see it before its first season is added."""
+        """Every LINEAGES entry must exist in the table even before its first
+        edition is seeded (this used to fail for the then-unseeded Fairs Cup)."""
         rows = self.cur.execute("SELECT name FROM lineage").fetchall()
         names = {r["name"] for r in rows}
         for expected in LINEAGES:
             self.assertIn(expected, names)
 
-    def test_fairs_cup_has_no_editions_yet(self):
-        n = self.cur.execute(
-            """SELECT COUNT(*) AS c FROM edition e
+    def test_fairs_cup_has_its_inaugural_edition(self):
+        row = self.cur.execute(
+            """SELECT e.season_label, COUNT(*) OVER () AS c FROM edition e
                JOIN lineage l ON l.lineage_id = e.lineage_id
                WHERE l.name = 'Inter-Cities Fairs Cup'"""
-        ).fetchone()["c"]
-        self.assertEqual(n, 0)
+        ).fetchone()
+        self.assertEqual(row["c"], 1)
+        self.assertEqual(row["season_label"], "1955-58")
 
     def test_name_history_scoped_to_contested_lineage_not_shared_label(self):
         """cwks_warsaw and wismut only played the European Cup in 1960-61, not
