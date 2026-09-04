@@ -4,11 +4,15 @@ Adding a season is dropping one dict into `seasons.py` (and any brand-new clubs
 into `clubs.py`). The build verifies your entries against RSSSF's own aggregates,
 so a slip fails the build instead of shipping a wrong scoreline.
 
-v1.6 is complete. European Cup is seeded through **1962-63** (AC Milan's
-first title). Cup Winners' Cup is seeded through **1961-62** (Atlético Madrid,
-after a replayed final against holders Fiorentina). The inaugural Inter-Cities
-Fairs Cup **1955-58** (Barcelona) is seeded, giving that lineage its first
-edition. See [`ROADMAP.md`](ROADMAP.md) for the v1.7 queue.
+v1.6 and v1.7 are both complete. European Cup is seeded through **1962-63**
+(AC Milan's first title). Cup Winners' Cup is seeded through **1961-62**
+(Atlético Madrid, after a replayed final against holders Fiorentina). The
+inaugural Inter-Cities Fairs Cup **1955-58** (Barcelona) is seeded, giving
+that lineage its first edition. v1.7 added no new season data - it wired
+`club_campaign()`, `edition_chronology()` and the champion's-route highlight
+into the CLI and viewer instead. See [`ROADMAP.md`](ROADMAP.md) for the v2.0
+queue (group stages, on the currently-unintegrated `feat/modern-era-parser`
+branch).
 
 ## 1. New clubs → `clubs.py`
 

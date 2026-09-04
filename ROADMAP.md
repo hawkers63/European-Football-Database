@@ -7,15 +7,16 @@ stages and the modern league phase.
 
 ## Current verified snapshot
 
-The v1.6 working baseline contains:
+The v1.7 working baseline contains:
 
 - 3 seeded competition lineages, 11 editions and 130 canonical clubs;
-- 51 rounds, 238 ties and 477 matches;
+- 51 rounds, 238 ties and 477 matches (unchanged from v1.6 - v1.7 added no
+  new season data);
 - European Cup coverage from **1955-56 through 1962-63**;
 - European Cup Winners' Cup coverage from the inaugural **1960-61** through
   **1961-62**;
 - the inaugural Inter-Cities Fairs Cup **1955-58**;
-- 156 passing automated tests; and
+- 182 passing automated tests; and
 - a clean SQLite integrity check with aggregate and foreign-key validation.
 
 The generated row counts are a point-in-time snapshot. They must be refreshed
@@ -121,6 +122,24 @@ whenever a season is added.
       measured match-date backfill for pre-1961-62 editions, are deferred to
       a future data pass rather than blocking this release.
 
+### v1.7 — Yearbook navigation and statistics wiring
+
+- [x] Added `club_campaign()`, `edition_chronology()` and
+      `winner_path_club_ids()` query helpers, plus `cli.py path <club>
+      <season>` and `cli.py chronology <season>` subcommands.
+- [x] `LEADERBOARD_KINDS` now includes `wins` and `gd` - the underlying
+      leaderboard functions already existed but weren't exposed to the CLI.
+- [x] `club_record()`'s hat-trick notes are now scoped to `season_label`
+      when given, instead of always being all-time.
+- [x] `verify()` rejects `decided_by=away_goals` when the edition's
+      `away_goals_active` flag is false, ahead of any 1965-66+ seeding.
+- [x] The desktop viewer's club profile now reuses `queries.club_campaign()`
+      for a new "Campaign" section (that club's route through the currently
+      loaded season, including walkovers) - the first place the viewer
+      consumes a shared `queries.py` helper instead of its own SQL.
+- [x] Ties on the tournament champion's route are outlined in victory green
+      on both the fixtures list and the bracket.
+
 ### Engineering baseline completed across v1.x
 
 - [x] Added regression coverage for database integrity, the build pipeline,
@@ -152,40 +171,6 @@ This work stays separate from v1.6 so the next Classic Era data release remains
 small and reviewable.
 
 ## Planned releases
-
-### v1.7 — Yearbook navigation and statistics wiring
-
-**Goal:** make a loaded season readable as a yearbook - a club's campaign
-path, a dated chronology, and a highlighted winner's route - without opening
-the group-stage branch, and finish wiring the v1.4 statistics helpers into
-the CLI and viewer rather than leaving them CLI-only.
-
-Planned scope:
-
-- [ ] Add `club_campaign()`, `edition_chronology()` and `winner_path_club_ids()`
-      query helpers; new `cli.py` `path` and `chronology` subcommands.
-- [ ] Extend `LEADERBOARD_KINDS` to include `wins` and `gd`, matching the
-      leaderboard functions that already exist but aren't exposed.
-- [ ] Scope `club_record()`'s hat-trick notes to `season_label` when given,
-      so a season-filtered query doesn't leak notes from other seasons.
-- [ ] Wire the v1.4 statistics helpers into the desktop viewer's club profile
-      (it currently uses its own batched SQL) and highlight the champion's
-      route on the fixtures list and bracket using the existing victory-green
-      token.
-- [ ] Extend `verify()` to reject `decided_by='away_goals'` when the
-      edition's `away_goals_active` flag is false, ahead of any 1965-66+
-      seeding (the flag's historical population/abolition stays a v3.0 item).
-
-Release gates:
-
-- `python build_database.py --force` and `python -m pytest -q` remain green;
-  Classic Era 1955-60 golden data unchanged.
-- `python cli.py path <club> <season>` and `python cli.py chronology <season>`
-  run against real seeded data with stored scorelines only.
-- The viewer's club profile and fixtures list consume the shared query
-  helpers rather than UI-only SQL.
-
-Not in scope: group tables, Swiss-format logic, or seeding new editions.
 
 ### v2.0 — Group Stage Era
 

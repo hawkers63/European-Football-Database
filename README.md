@@ -9,9 +9,13 @@ Inter-Cities Fairs Cup **1955-58**.
 
 Stack: Python + CustomTkinter (UI) · SQLite (data, bundleable into a `.exe`).
 
-**Current baseline:** v1.6 · **Next development release:** v1.7, yearbook
-navigation and statistics wiring. See [`ROADMAP.md`](ROADMAP.md) for release
-scope and acceptance gates.
+**Current baseline:** v1.7 · **Next development release:** v2.0, Group Stage
+Era. See [`ROADMAP.md`](ROADMAP.md) for release scope and acceptance gates.
+
+v1.7 added yearbook navigation - `python cli.py path <club> <season>` and
+`cli.py chronology <season>` - plus wiring the desktop viewer's club profile
+and fixtures/bracket views to the same shared statistics helpers as the CLI,
+without seeding any new season data.
 
 Group-stage and league-phase prototypes exist on `feat/modern-era-parser`, but
 they remain outside the baseline until the v2.0 integration gates are met.
@@ -24,7 +28,7 @@ they remain outside the baseline until the v2.0 integration gates are met.
 - Full match dates for the European Cup 1961-62; final-only dates for the
   three v1.6 editions; selected dates, venues, attendances and referees for
   earlier editions
-- 156 passing automated tests at the v1.6 baseline
+- 182 passing automated tests at the v1.7 baseline
 
 ## Files
 
@@ -36,7 +40,7 @@ they remain outside the baseline until the v2.0 integration gates are met.
 | `build_database.py` | Builds `european_football.db`; **verifies** every aggregate before committing. |
 | `app.py` | The CustomTkinter viewer (fixtures list, tournament bracket, club profiles). |
 | `ui/` | Modular widgets, yearbook palette, and batched data loaders. |
-| `queries.py`, `cli.py` | Shared statistics plus club, head-to-head, goals, leaderboard, season and JSON commands. |
+| `queries.py`, `cli.py` | Shared statistics plus club, head-to-head, goals, leaderboard, campaign path, chronology, season and JSON commands. |
 | `tools/import_rsssf.py` | Drafts season data from pasted RSSSF result lines and checks aggregates. |
 | `european_football.db` | Generated database (130 clubs, 11 editions, 238 ties, 477 matches). |
 | `ROADMAP.md`, `DATA_GUIDE.md`, `CHANGELOG.md` | Plan, how to add a season, history. |

@@ -1,5 +1,43 @@
 # Changelog
 
+## v1.7 - Yearbook navigation and statistics wiring
+- Added `queries.club_campaign(db, club_id, season_label)`: a club's ties
+  for one season, ordered by round, including walkovers (no legs, just
+  the note) - never inferring a scoreline that isn't in a stored match row.
+- Added `queries.edition_chronology(db, season_label)`: dated matches
+  across every lineage sharing that label, oldest first; undated matches
+  are omitted rather than guessed.
+- Added `queries.winner_path_club_ids(db, edition_id)`: the champion plus
+  every club they beat, round by round - empty set if no winner recorded.
+- New CLI subcommands: `python cli.py path <club> <season>` and
+  `python cli.py chronology <season>`. Confirmed `path benfica 1961-62`
+  prints exactly First Round Austria Wien -> Quarter-Finals Nurnberg ->
+  Semi-Finals Tottenham -> Final Real Madrid, as specified.
+- `LEADERBOARD_KINDS` now includes `wins` and `gd` - `leaderboard_wins()`
+  and `leaderboard_goal_difference()` already existed but were never
+  exposed to the CLI's `choices`. `cli.py leaderboard wins`/`gd` reuse
+  the existing "matches" table layout rather than adding a third format.
+- `club_record()`'s hat-trick notes are now scoped to `season_label` when
+  given (was always all-time regardless of the season filter already
+  applied to the rest of the record).
+- `build_database.verify()` now rejects `decided_by=away_goals` in any
+  edition where `away_goals_active` is false, ahead of any 1965-66+
+  seeding (the rule wasn't introduced until then).
+- Desktop viewer: `ui.data.fetch_club_profile()` gained an optional
+  `season_label` parameter that attaches a `"campaign"` list via
+  `queries.club_campaign()` - the first place the viewer reuses a
+  `queries.py` helper instead of its own batched SQL. `ClubProfileDialog`
+  renders it as a new "Campaign" section above match history. Fully
+  backward compatible: omitting `season_label` reproduces the exact
+  previous profile shape.
+- Desktop viewer: ties on the tournament champion's route are now
+  outlined in victory green (`colours["win"]`) on both the fixtures list
+  and the bracket, via a new display-free `ui.data.tie_on_winner_path()`
+  helper (both sides of a tie in `winner_path_club_ids()`'s set).
+- No new season data was seeded this release, by design.
+- 182 tests passing (was 156), 1 skipped (no unwon edition exists yet to
+  exercise `winner_path_club_ids()`'s empty-set case).
+
 ## v1.6 - Classic competitions expansion
 - Seeded and verified the inaugural Inter-Cities Fairs Cup **1955-58** (third
   and final v1.6 target edition): FC Barcelona beat London XI 8-2 on
