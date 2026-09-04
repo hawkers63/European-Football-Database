@@ -75,6 +75,26 @@ def unused_club_keys(clubs=None, referenced=None):
     return sorted(k for k in clubs if k not in referenced)
 
 
+def _editions_contested_by(club_key, edition_ids, seasons=None):
+    """(lineage, season_label, edition_id) for editions where club_key actually played.
+
+    Two lineages can share a season_label (e.g. "1960-61" for both the
+    European Cup and the Cup Winners' Cup); matching by label alone would
+    attribute a club's period name to a lineage it never entered that season.
+    """
+    result = []
+    for s in (SEASONS if seasons is None else seasons):
+        played = club_key in (s["winner"], s["runner_up"]) or any(
+            club_key in (tie["t1"], tie["t2"])
+            for rnd in s["rounds"] for tie in rnd["ties"]
+        )
+        if played:
+            eid = edition_ids.get((s["lineage"], s["season_label"]))
+            if eid is not None:
+                result.append((s["lineage"], s["season_label"], eid))
+    return result
+
+
 def build(force=False, db_path=None):
     """Build the SQLite database. ``db_path`` defaults to ``european_football.db``.
 
@@ -163,10 +183,10 @@ def build(force=False, db_path=None):
             # Club registered but unused in seeded seasons - skip quietly.
             continue
         season_label = entry.get("season_label")
-        # Prefer an edition of the same season_label (any lineage); if several,
-        # insert one row per matching edition so display works in each.
-        matched = [(lin, lab, eid) for (lin, lab), eid in edition_ids.items()
-                   if lab == season_label]
+        # Scope to editions the club actually contested that season, not just
+        # any edition sharing the label - see _editions_contested_by.
+        contested = _editions_contested_by(key, edition_ids)
+        matched = [(lin, lab, eid) for (lin, lab, eid) in contested if lab == season_label]
         if matched:
             for _lin, lab, eid in matched:
                 cur.execute(

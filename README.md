@@ -22,7 +22,7 @@ they remain outside the baseline until the v2.0 integration gates are met.
 - 38 rounds, 176 ties and 351 matches
 - Full match dates for the European Cup 1961-62; selected dates, venues,
   attendances and referees for earlier editions
-- 112 passing automated tests at the v1.5 baseline
+- 113 passing automated tests at the v1.5 baseline
 
 ## Files
 

@@ -189,6 +189,22 @@ class TestDisplayNameAgainstDb(unittest.TestCase):
         self.assertIn("European Cup", names)
         self.assertIn("European Cup Winners' Cup", names)
 
+    def test_name_history_scoped_to_contested_lineage_not_shared_label(self):
+        """cwks_warsaw and wismut only played the European Cup in 1960-61, not
+        the Cup Winners' Cup - their period names must not leak onto the CWC
+        edition just because it shares the "1960-61" season_label."""
+        rows = self.cur.execute(
+            """SELECT c.name AS club, l.name AS lineage
+               FROM club_name_history h
+               JOIN club c ON c.club_id = h.club_id
+               JOIN edition e ON e.edition_id = h.edition_id
+               JOIN lineage l ON l.lineage_id = e.lineage_id
+               WHERE h.season_label = '1960-61'"""
+        ).fetchall()
+        by_club = {r["club"]: r["lineage"] for r in rows}
+        self.assertEqual(by_club.get("CWKS Warsaw"), "European Cup")
+        self.assertEqual(by_club.get("Wismut Karl-Marx-Stadt"), "European Cup")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,6 +1,13 @@
 # Changelog
 
 ## Unreleased - v1.6 Classic competitions expansion
+- Fixed `club_name_history` attaching a club's period name to every edition
+  sharing its season_label, regardless of lineage. `cwks_warsaw` (Legia
+  Warsaw) and `wismut` only played the European Cup in 1960-61, but were
+  also getting a history row on that year's Cup Winners' Cup edition, which
+  they never entered. `build_database.py` now scopes each entry to editions
+  the club actually contested (`_editions_contested_by`); `club_name_history`
+  row count drops from 11 to 9 accordingly.
 - Fixed the Vorwärts–Linfield 1961-62 Preliminary tie: it was stored as
   `decided_by=aggregate` with a single leg, which `verify()` could not catch
   (aggregate checks only sum legs, they don't require two of them). Now
