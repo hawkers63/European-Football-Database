@@ -1,6 +1,22 @@
 # Changelog
 
 ## Unreleased - v1.6 Classic competitions expansion
+- Seeded and verified Cup Winners' Cup **1961-62** (first of the three v1.6
+  target editions): Atlético Madrid won UEFA's first directly-organised
+  Cup Winners' Cup, beating holders Fiorentina in a replayed final (1-1 aet
+  at Hampden Park, then 3-0 in Stuttgart). Sourced directly from RSSSF
+  (`rsssf.org/ec/ec196162.html`), cross-checked leg-by-leg against an
+  independent account before entry. 15 new canonical clubs. Several
+  fixtures were relocated to neutral venues for Cold War travel-restriction
+  reasons (Motor Jena's East German away legs; Atlético's semi-final second
+  leg moved to Sweden since Francoist Spain had no diplomatic relations
+  with the GDR) - all recorded as leg notes.
+  - Introduces a new settlement shape: `by="replay"` with `agg=None` for a
+    single match that finished level and was replayed outright (a drawn
+    cup final), as opposed to the existing two-legged-tie-plus-play-off
+    shape. `verify()`'s Fix A settlement checks now branch on `agg is None`
+    to validate each shape correctly (2 legs vs 3+).
+  - `lineage=3, club=114, edition=9, round=43, tie=198, match=395`.
 - Fixed `match.notes` being schema'd but never written. `queries.py`
   (`_MATCH_SELECT`, `hat_trick_notes()`) already read it, but
   `MATCH_INSERT_SQL` / `match_insert_tuple()` never included it, so

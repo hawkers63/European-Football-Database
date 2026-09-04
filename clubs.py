@@ -154,6 +154,27 @@ CLUBS = {
     "b1913":         {"name": "B1913 Odense",         "country": "DEN", "city": "Odense"},
     "haka":          {"name": "Haka Valkeakoski",     "country": "FIN", "city": "Valkeakoski",
                       "notes": "Listed by RSSSF as Valkeakosken Haka."},
+
+    # --- added 1961-62 Cup Winners' Cup -------------------------------------
+    "sedan":         {"name": "CS Sedan Ardennes",     "country": "FRA", "city": "Sedan"},
+    "leicester":     {"name": "Leicester City",        "country": "ENG", "city": "Leicester"},
+    "chaux_de_fonds": {"name": "FC La Chaux-de-Fonds", "country": "SUI", "city": "La Chaux-de-Fonds"},
+    "leixoes":       {"name": "Leixões SC",            "country": "POR", "city": "Matosinhos"},
+    "swansea":       {"name": "Swansea Town",          "country": "WAL", "city": "Swansea",
+                      "notes": "Renamed Swansea City in 1970."},
+    "motor_jena":    {"name": "SC Motor Jena",         "country": "GDR", "city": "Jena",
+                      "notes": "Later renamed FC Carl Zeiss Jena in 1966."},
+    "floriana":      {"name": "Floriana FC",           "country": "MLT", "city": "Floriana"},
+    "dunfermline":   {"name": "Dunfermline Athletic",  "country": "SCO", "city": "Dunfermline"},
+    "st_pats":       {"name": "St Patrick's Athletic", "country": "IRL", "city": "Dublin"},
+    "spartak_varna": {"name": "Spartak Varna",         "country": "BUL", "city": "Varna"},
+    "werder_bremen": {"name": "SV Werder Bremen",      "country": "FRG", "city": "Bremen"},
+    "alliance_dudelange": {"name": "CS Alliance Dudelange", "country": "LUX", "city": "Dudelange",
+                      "notes": "Distinct from Stade Dudelange; the two merged in 1991 to form F91 Dudelange."},
+    "progresul_buc": {"name": "AS Progresul București", "country": "ROM", "city": "Bucharest"},
+    "vardar":        {"name": "FK Vardar",             "country": "YUG", "city": "Skopje"},
+    "dynamo_zilina": {"name": "Dynamo Žilina",         "country": "TCH", "city": "Žilina",
+                      "notes": "Now MŠK Žilina."},
 }
 
 

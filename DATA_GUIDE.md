@@ -5,9 +5,10 @@ into `clubs.py`). The build verifies your entries against RSSSF's own aggregates
 so a slip fails the build instead of shipping a wrong scoreline.
 
 European Cup is seeded through **1961-62** (Benfica retained the trophy against
-Real Madrid). Cup Winners' Cup remains at the inaugural **1960-61**.
-This is the **v1.5 baseline**. The v1.6 queue is European Cup **1962-63**, Cup
-Winners' Cup **1961-62**, and Inter-Cities Fairs Cup **1955-58**.
+Real Madrid). Cup Winners' Cup is now seeded through **1961-62** (Atlético
+Madrid won a replayed final against holders Fiorentina) - this was v1.6's
+first landed season. The remaining v1.6 queue is European Cup **1962-63**
+and the inaugural Inter-Cities Fairs Cup **1955-58**.
 
 ## 1. New clubs → `clubs.py`
 

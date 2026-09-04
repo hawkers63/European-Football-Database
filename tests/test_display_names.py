@@ -113,6 +113,65 @@ class TestSeasons196162(unittest.TestCase):
         self.assertIn("3-0", found["note"])
 
 
+class TestCWC196162(unittest.TestCase):
+    def _cwc(self):
+        hits = [s for s in SEASONS
+                if s["season_label"] == "1961-62" and s["lineage"] == "European Cup Winners' Cup"]
+        self.assertEqual(len(hits), 1)
+        return hits[0]
+
+    def _tie(self, s, a, b):
+        for rnd in s["rounds"]:
+            for tie in rnd["ties"]:
+                if {tie["t1"], tie["t2"]} == {a, b}:
+                    return tie
+        return None
+
+    def test_champion_and_runner_up(self):
+        s = self._cwc()
+        self.assertEqual(s["winner"], "atletico")
+        self.assertEqual(s["runner_up"], "fiorentina")
+        self.assertFalse(s["away_goals_active"])
+
+    def test_ujpest_floriana_prelim_aggregate(self):
+        """RSSSF: Floriana 2-5, 2-10 Ujpesti Dozsa - 4-15 aggregate."""
+        s = self._cwc()
+        found = self._tie(s, "floriana", "ujpest")
+        self.assertIsNotNone(found)
+        self.assertEqual(found["agg"], (4, 15))
+        self.assertEqual(found["win"], "ujpest")
+        self.assertEqual(found["by"], "aggregate")
+
+    def test_final_was_a_single_match_replayed_not_a_two_legged_playoff(self):
+        """Atletico Madrid 1-1 aet Fiorentina at Hampden Park, then a
+        straight replay in Stuttgart - agg=None, exactly 2 legs, no
+        aggregate concept between the two independent matches."""
+        s = self._cwc()
+        found = self._tie(s, "atletico", "fiorentina")
+        self.assertIsNotNone(found)
+        self.assertEqual(found["by"], "replay")
+        self.assertIsNone(found["agg"])
+        self.assertEqual(len(found["legs"]), 2)
+        self.assertEqual(found["win"], "atletico")
+
+    def test_motor_jena_fixtures_relocated_away_from_east_germany(self):
+        """Cold War travel restrictions (shortly after the Berlin Wall went
+        up) meant every Motor Jena tie that should have been played at an
+        opponent's ground, or the opponent's leg at Jena's opponents ground,
+        was instead relocated - a documented recurring oddity this season."""
+        s = self._cwc()
+        relocated = 0
+        for rnd in s["rounds"]:
+            for tie in rnd["ties"]:
+                if "motor_jena" not in (tie["t1"], tie["t2"]):
+                    continue
+                for leg in tie["legs"]:
+                    extras = leg[4] if len(leg) > 4 else {}
+                    if "relocated" in (extras.get("venue") or ""):
+                        relocated += 1
+        self.assertGreaterEqual(relocated, 3)
+
+
 class TestClassicEraGoldenUnchanged(unittest.TestCase):
     def test_five_in_a_row_champions(self):
         expected = {

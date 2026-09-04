@@ -22,8 +22,14 @@ Tie format (a dict):
     by          'aggregate' | 'away_goals' | 'replay' | 'penalties' |
                 'coin_toss' | 'single_match' | 'walkover' | 'bye'
     agg         (t1_goals, t2_goals) over legs 1 & 2 only — RSSSF's printed
-                aggregate. None for walkovers/byes with no legs.
-    legs        list of leg tuples (a 3rd leg is a play-off/replay)
+                aggregate. None for walkovers/byes with no legs, and also
+                None for a "replay" that is a single match replayed outright
+                (a cup final drawn then replayed, not a two-legged tie plus
+                play-off) — that shape has exactly 2 legs: the original
+                match and the replay, with no aggregate concept between them.
+    legs        list of leg tuples (a 3rd leg is a play-off/replay after two
+                genuine legs; but see the agg=None replay shape above, which
+                has only 2 legs total)
     note        optional string
 
 All results transcribed from RSSSF (James M. Ross's European competitions pages).
@@ -645,6 +651,88 @@ SEASONS = [
                        date="1961-05-17", att=80000, ref="Carl Erich Steiner (Austria)"),
                      L("fiorentina", "rangers", 2, 1, venue="Stadio Comunale, Florence",
                        date="1961-05-27", att=50000, ref="Vilmos Hernádi (Hungary)"),
+                 ]},
+            ]},
+        ],
+    },
+
+    # =====================================================================
+    # 1961-62 - Cup Winners' Cup: first season directly organised by UEFA
+    # =====================================================================
+    {
+        "lineage": "European Cup Winners' Cup", "season_label": "1961-62", "start_year": 1961,
+        "competition_name": "European Cup Winners' Cup",
+        "winner": "atletico", "runner_up": "fiorentina", "away_goals_active": False,
+        "notes": "First Cup Winners' Cup season organised directly by UEFA. Several Cold War-era "
+                 "fixtures involving GDR or Spanish clubs were relocated to neutral venues; the "
+                 "final was drawn 1-1 after extra time and settled by a replay in Stuttgart.",
+        "rounds": [
+            {"name": "Preliminary Round", "ties": [
+                {"t1": "sedan", "t2": "atletico", "win": "atletico", "by": "aggregate", "agg": (3, 7),
+                 "legs": [L("sedan", "atletico", 2, 3), L("atletico", "sedan", 4, 1)]},
+                {"t1": "glenavon", "t2": "leicester", "win": "leicester", "by": "aggregate", "agg": (2, 7),
+                 "legs": [L("glenavon", "leicester", 1, 4, venue="Belfast (1st leg)"),
+                          L("leicester", "glenavon", 3, 1)]},
+                {"t1": "chaux_de_fonds", "t2": "leixoes", "win": "leixoes", "by": "aggregate", "agg": (6, 7),
+                 "legs": [L("chaux_de_fonds", "leixoes", 6, 2), L("leixoes", "chaux_de_fonds", 5, 0)]},
+                {"t1": "swansea", "t2": "motor_jena", "win": "motor_jena", "by": "aggregate", "agg": (3, 7),
+                 "legs": [L("swansea", "motor_jena", 2, 2, venue="Linz, Austria (1st leg relocated)"),
+                          L("motor_jena", "swansea", 5, 1)]},
+                {"t1": "floriana", "t2": "ujpest", "win": "ujpest", "by": "aggregate", "agg": (4, 15),
+                 "legs": [L("floriana", "ujpest", 2, 5), L("ujpest", "floriana", 10, 2)]},
+                {"t1": "dunfermline", "t2": "st_pats", "win": "dunfermline", "by": "aggregate", "agg": (8, 1),
+                 "legs": [L("dunfermline", "st_pats", 4, 1), L("st_pats", "dunfermline", 0, 4)]},
+                {"t1": "rapid_wien", "t2": "spartak_varna", "win": "rapid_wien", "by": "aggregate", "agg": (5, 2),
+                 "legs": [L("rapid_wien", "spartak_varna", 0, 0), L("spartak_varna", "rapid_wien", 2, 5)]},
+            ]},
+            {"name": "First Round", "ties": [
+                {"t1": "leicester", "t2": "atletico", "win": "atletico", "by": "aggregate", "agg": (1, 3),
+                 "legs": [L("leicester", "atletico", 1, 1), L("atletico", "leicester", 2, 0)]},
+                {"t1": "werder_bremen", "t2": "agf", "win": "werder_bremen", "by": "aggregate", "agg": (5, 2),
+                 "legs": [L("werder_bremen", "agf", 2, 0), L("agf", "werder_bremen", 2, 3)]},
+                {"t1": "leixoes", "t2": "progresul_buc", "win": "leixoes", "by": "aggregate", "agg": (2, 1),
+                 "legs": [L("leixoes", "progresul_buc", 1, 1, venue="Lisbon (1st leg relocated)"),
+                          L("progresul_buc", "leixoes", 0, 1)]},
+                {"t1": "motor_jena", "t2": "alliance_dudelange", "win": "motor_jena", "by": "aggregate", "agg": (9, 2),
+                 "legs": [L("motor_jena", "alliance_dudelange", 7, 0),
+                          L("alliance_dudelange", "motor_jena", 2, 2, venue="Erfurt (2nd leg relocated)")]},
+                {"t1": "ajax", "t2": "ujpest", "win": "ujpest", "by": "aggregate", "agg": (3, 4),
+                 "legs": [L("ajax", "ujpest", 2, 1), L("ujpest", "ajax", 3, 1)]},
+                {"t1": "dunfermline", "t2": "vardar", "win": "dunfermline", "by": "aggregate", "agg": (5, 2),
+                 "legs": [L("dunfermline", "vardar", 5, 0), L("vardar", "dunfermline", 2, 0)]},
+                {"t1": "olympiakos", "t2": "dynamo_zilina", "win": "dynamo_zilina", "by": "aggregate", "agg": (2, 4),
+                 "legs": [L("olympiakos", "dynamo_zilina", 2, 3), L("dynamo_zilina", "olympiakos", 1, 0)]},
+                {"t1": "fiorentina", "t2": "rapid_wien", "win": "fiorentina", "by": "aggregate", "agg": (9, 3),
+                 "legs": [L("fiorentina", "rapid_wien", 3, 1), L("rapid_wien", "fiorentina", 2, 6)]},
+            ]},
+            {"name": "Quarter-Finals", "ties": [
+                {"t1": "werder_bremen", "t2": "atletico", "win": "atletico", "by": "aggregate", "agg": (2, 4),
+                 "legs": [L("werder_bremen", "atletico", 1, 1), L("atletico", "werder_bremen", 3, 1)]},
+                {"t1": "motor_jena", "t2": "leixoes", "win": "motor_jena", "by": "aggregate", "agg": (4, 2),
+                 "legs": [L("motor_jena", "leixoes", 1, 1),
+                          L("leixoes", "motor_jena", 1, 3, venue="Gera (2nd leg relocated)")]},
+                {"t1": "ujpest", "t2": "dunfermline", "win": "ujpest", "by": "aggregate", "agg": (5, 3),
+                 "legs": [L("ujpest", "dunfermline", 4, 3), L("dunfermline", "ujpest", 0, 1)]},
+                {"t1": "dynamo_zilina", "t2": "fiorentina", "win": "fiorentina", "by": "aggregate", "agg": (3, 4),
+                 "legs": [L("dynamo_zilina", "fiorentina", 3, 2), L("fiorentina", "dynamo_zilina", 2, 0)]},
+            ]},
+            {"name": "Semi-Finals", "ties": [
+                {"t1": "motor_jena", "t2": "atletico", "win": "atletico", "by": "aggregate", "agg": (0, 5),
+                 "legs": [L("motor_jena", "atletico", 0, 1),
+                          L("atletico", "motor_jena", 4, 0,
+                            venue="Malmö, Sweden (2nd leg relocated - Francoist Spain had no "
+                                  "diplomatic relations with the GDR)")]},
+                {"t1": "fiorentina", "t2": "ujpest", "win": "fiorentina", "by": "aggregate", "agg": (3, 0),
+                 "legs": [L("fiorentina", "ujpest", 2, 0), L("ujpest", "fiorentina", 0, 1)]},
+            ]},
+            {"name": "Final", "ties": [
+                {"t1": "atletico", "t2": "fiorentina", "win": "atletico", "by": "replay", "agg": None,
+                 "note": "Drawn after extra time; Atlético Madrid won the replay in Stuttgart.",
+                 "legs": [
+                     L("atletico", "fiorentina", 1, 1, venue="Hampden Park, Glasgow",
+                       date="1962-05-10", att=27000, ref="Tom Wharton (Scotland)", aet=True),
+                     L("atletico", "fiorentina", 3, 0, venue="Neckarstadion, Stuttgart (replay)",
+                       date="1962-09-05", att=38000, ref="Kurt Tschenscher (West Germany)"),
                  ]},
             ]},
         ],

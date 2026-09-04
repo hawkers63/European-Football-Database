@@ -317,16 +317,34 @@ def verify(cur, club_id, seasons=None):
                                 f'!! WIN  {tag}: single-match score implies {actual}, data says {win}')
 
                 elif by in ("replay", "coin_toss"):
-                    if len(legs) < 3:
-                        problems.append(f'!! LEGS {tag}: {by} requires a play-off leg, has {len(legs)}')
-                    elif by == "replay" and win:
-                        h, aw, hs, as_, _ = leg_fields(legs[2])
-                        if hs != as_:
-                            po_home = a if h == a else b
-                            actual = po_home if hs > as_ else (b if po_home == a else a)
-                            if actual != win:
-                                problems.append(
-                                    f'!! WIN  {tag}: play-off score implies {actual}, data says {win}')
+                    if tie["agg"] is None:
+                        # A single match that finished level and was replayed
+                        # outright (e.g. a cup final) - not a two-legged tie
+                        # with a play-off leg, so there's no "aggregate" and
+                        # the decider is legs[1], not legs[2].
+                        if len(legs) != 2:
+                            problems.append(
+                                f'!! LEGS {tag}: {by} with agg=None expects exactly 2 legs '
+                                f'(match + replay), has {len(legs)}')
+                        elif by == "replay" and win:
+                            h, aw, hs, as_, _ = leg_fields(legs[1])
+                            if hs != as_:
+                                po_home = a if h == a else b
+                                actual = po_home if hs > as_ else (b if po_home == a else a)
+                                if actual != win:
+                                    problems.append(
+                                        f'!! WIN  {tag}: replay score implies {actual}, data says {win}')
+                    else:
+                        if len(legs) < 3:
+                            problems.append(f'!! LEGS {tag}: {by} requires a play-off leg, has {len(legs)}')
+                        elif by == "replay" and win:
+                            h, aw, hs, as_, _ = leg_fields(legs[2])
+                            if hs != as_:
+                                po_home = a if h == a else b
+                                actual = po_home if hs > as_ else (b if po_home == a else a)
+                                if actual != win:
+                                    problems.append(
+                                        f'!! WIN  {tag}: play-off score implies {actual}, data says {win}')
 
                 elif by in ("walkover", "bye"):
                     if legs:

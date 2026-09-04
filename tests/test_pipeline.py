@@ -107,6 +107,32 @@ class TestSettlementShapeVerify(unittest.TestCase):
         problems = verify(None, {}, seasons=self._season(tie))
         self.assertTrue(any("play-off score implies" in p for p in problems), problems)
 
+    def test_single_match_final_replayed_is_accepted(self):
+        """A one-off final drawn and replayed outright (no two real legs, so
+        agg=None) - the CWC 1961-62 final shape: Atletico Madrid 1-1 aet
+        Fiorentina, replay Atletico Madrid 3-0 Fiorentina."""
+        tie = {
+            "t1": "a", "t2": "b", "win": "a", "by": "replay", "agg": None,
+            "legs": [("a", "b", 1, 1), ("a", "b", 3, 0)],
+        }
+        self.assertEqual(verify(None, {}, seasons=self._season(tie)), [])
+
+    def test_single_match_final_replay_wrong_leg_count_is_rejected(self):
+        tie = {
+            "t1": "a", "t2": "b", "win": "a", "by": "replay", "agg": None,
+            "legs": [("a", "b", 1, 1)],
+        }
+        problems = verify(None, {}, seasons=self._season(tie))
+        self.assertTrue(any("expects exactly 2 legs" in p for p in problems), problems)
+
+    def test_single_match_final_replay_score_must_imply_winner(self):
+        tie = {
+            "t1": "a", "t2": "b", "win": "b", "by": "replay", "agg": None,
+            "legs": [("a", "b", 1, 1), ("a", "b", 3, 0)],
+        }
+        problems = verify(None, {}, seasons=self._season(tie))
+        self.assertTrue(any("replay score implies" in p for p in problems), problems)
+
     def test_walkover_with_legs_is_rejected(self):
         tie = {
             "t1": "a", "t2": "b", "win": "a", "by": "walkover", "agg": None,

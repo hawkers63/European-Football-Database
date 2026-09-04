@@ -88,12 +88,15 @@ class TestSeasonIntegrity(unittest.TestCase):
         self.assertEqual(mismatches, [])
 
     def test_replay_and_coin_toss_have_a_third_leg(self):
+        """A two-legged tie's play-off needs a 3rd leg; a single match
+        replayed outright (agg=None - e.g. a drawn cup final) needs only 2."""
         for s in SEASONS:
             for rnd in s["rounds"]:
                 for tie in rnd["ties"]:
                     if tie["by"] in ("replay", "coin_toss"):
+                        expected = 2 if tie["agg"] is None else 3
                         self.assertGreaterEqual(
-                            len(tie["legs"]), 3,
+                            len(tie["legs"]), expected,
                             "%s %s %s v %s" % (s["season_label"], rnd["name"], tie["t1"], tie["t2"]),
                         )
 
