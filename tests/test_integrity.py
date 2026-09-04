@@ -5,27 +5,26 @@ import copy
 import os
 import sqlite3
 import sys
+import tempfile
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
+import build_database
 from clubs import CLUBS
 from seasons import SEASONS
 from build_database import (
+    ALLOWED_SETTLEMENTS,
     MATCH_INSERT_SQL,
+    build,
     collect_referenced_keys,
     leg_fields,
     match_insert_tuple,
     unused_club_keys,
     verify,
 )
-
-ALLOWED_SETTLEMENTS = {
-    "aggregate", "away_goals", "replay", "penalties",
-    "coin_toss", "single_match", "walkover", "bye",
-}
 
 DB_PATH = os.path.join(ROOT, "european_football.db")
 SCHEMA_PATH = os.path.join(ROOT, "schema.sql")
@@ -190,6 +189,51 @@ class TestMatchInsertPens(unittest.TestCase):
         club_id = {"home": 1, "away": 2}
         row = match_insert_tuple(1, 1, club_id, ("home", "away", 2, 0))
         self.assertEqual(len(row), MATCH_INSERT_SQL.count("?"))
+
+
+class TestAtomicRebuild(unittest.TestCase):
+    """A failed --force rebuild must never delete the last known-good database."""
+
+    def _broken_season(self):
+        # A one-leg "aggregate" tie: rejected by verify()'s settlement-shape
+        # check regardless of anything else in the real season data.
+        return [{
+            "lineage": "European Cup", "season_label": "2099-00", "start_year": 2099,
+            "competition_name": "European Cup",
+            "winner": "real_madrid", "runner_up": "benfica", "away_goals_active": False,
+            "rounds": [{"name": "R", "ties": [
+                {"t1": "real_madrid", "t2": "benfica", "win": "real_madrid",
+                 "by": "aggregate", "agg": (1, 0),
+                 "legs": [("real_madrid", "benfica", 1, 0)]},
+            ]}],
+        }]
+
+    def test_failed_force_rebuild_leaves_existing_db_untouched(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = os.path.join(tmpdir, "test.db")
+            self.assertEqual(build(force=True, db_path=db_path), 0)
+            with open(db_path, "rb") as fh:
+                good_bytes = fh.read()
+
+            original_seasons = build_database.SEASONS
+            build_database.SEASONS = original_seasons + self._broken_season()
+            try:
+                with self.assertRaises(SystemExit):
+                    build(force=True, db_path=db_path)
+            finally:
+                build_database.SEASONS = original_seasons
+
+            with open(db_path, "rb") as fh:
+                after_bytes = fh.read()
+            self.assertEqual(good_bytes, after_bytes)
+            self.assertFalse(os.path.exists(db_path + ".tmp"))
+
+    def test_successful_force_rebuild_leaves_no_stray_tmp_file(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = os.path.join(tmpdir, "test.db")
+            self.assertEqual(build(force=True, db_path=db_path), 0)
+            self.assertEqual(build(force=True, db_path=db_path), 0)
+            self.assertFalse(os.path.exists(db_path + ".tmp"))
 
 
 @unittest.skipUnless(os.path.exists(DB_PATH), "european_football.db not built yet")

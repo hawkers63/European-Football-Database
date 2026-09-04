@@ -340,13 +340,18 @@ def _export_edition(cur, edition_id):
         "runner_up": get_club_display_name(cur, e["runner_up_club_id"], edition_id) if e["runner_up_club_id"] else None,
         "rounds": [],
     }
-    for rnd in cur.execute(
+    # fetchall() at every level before descending - get_club_display_name()
+    # below re-executes on this same shared cursor, which would otherwise
+    # silently truncate an in-progress cur.execute() iteration at this level.
+    rounds = cur.execute(
         "SELECT * FROM round WHERE edition_id = ? ORDER BY round_order", (edition_id,)
-    ):
+    ).fetchall()
+    for rnd in rounds:
         rnd_obj = {"name": rnd["name"], "ties": []}
-        for tie in cur.execute(
+        ties = cur.execute(
             "SELECT * FROM tie WHERE round_id = ? ORDER BY tie_id", (rnd["round_id"],)
-        ):
+        ).fetchall()
+        for tie in ties:
             tie_obj = {
                 "club_a": get_club_display_name(cur, tie["club_a_id"], edition_id),
                 "club_b": get_club_display_name(cur, tie["club_b_id"], edition_id),
@@ -356,9 +361,10 @@ def _export_edition(cur, edition_id):
                 "notes": tie["notes"],
                 "legs": [],
             }
-            for m in cur.execute(
+            matches = cur.execute(
                 "SELECT * FROM match WHERE tie_id = ? ORDER BY leg_number", (tie["tie_id"],)
-            ):
+            ).fetchall()
+            for m in matches:
                 tie_obj["legs"].append({
                     "leg_number": m["leg_number"],
                     "date": m["match_date"],
@@ -372,6 +378,7 @@ def _export_edition(cur, edition_id):
                     "venue": m["venue"],
                     "attendance": m["attendance"],
                     "referee": m["referee"],
+                    "notes": m["notes"],
                 })
             rnd_obj["ties"].append(tie_obj)
         payload["rounds"].append(rnd_obj)

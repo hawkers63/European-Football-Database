@@ -192,10 +192,16 @@ def match_club(name: str, cutoff: float = 0.72):
     return key, ratio
 
 
+def _is_ignorable_line(raw: str) -> bool:
+    """Lines that are deliberately not data: blank, a comment, or the RSSSF
+    'Additional matches / notes' trailer heading."""
+    return not raw or raw.startswith("#") or raw.lower().startswith("additional")
+
+
 def parse_rsssf_line(line: str):
     """Parse one RSSSF result line into a structured dict (or None)."""
     raw = line.strip()
-    if not raw or raw.startswith("#") or raw.lower().startswith("additional"):
+    if _is_ignorable_line(raw):
         return None
     # walkover / bye prose lines are left for the human
     if "walkover" in raw.lower() or "withdrew" in raw.lower():
@@ -337,9 +343,13 @@ def main(argv=None):
 
     parsed_rows = []
     problems = []
-    for line in text.splitlines():
+    ignored_lines = []  # (line_no, text) - non-blank lines that weren't recognised as data
+    for line_no, line in enumerate(text.splitlines(), start=1):
+        raw = line.strip()
         parsed = parse_rsssf_line(line)
         if not parsed:
+            if not _is_ignorable_line(raw):
+                ignored_lines.append((line_no, raw))
             continue
         parsed_rows.append(parsed)
         problems.extend(validate_aggregate(parsed))
@@ -357,6 +367,12 @@ def main(argv=None):
     if unmatched:
         print("# WARNING: %d tie(s) had unmatched club names - search UNKNOWN_ in output." % len(unmatched),
               file=sys.stderr)
+    if ignored_lines:
+        print("# WARNING: %d non-blank line(s) ignored - did not match the expected "
+              "RSSSF line format (typo, or a format this parser doesn't handle yet):"
+              % len(ignored_lines), file=sys.stderr)
+        for line_no, raw in ignored_lines:
+            print("#   line %d: %s" % (line_no, raw), file=sys.stderr)
     return 0
 
 

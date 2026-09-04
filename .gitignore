@@ -1,5 +1,6 @@
 # Generated database — reproducible from build_database.py
 european_football.db
+european_football.db.tmp
 
 # Python
 __pycache__/

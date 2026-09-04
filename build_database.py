@@ -9,7 +9,9 @@ registry (clubs.py) and every season of fixtures (seasons.py).
 Crucially, it VERIFIES the data before committing: for each tie it recomputes the
 aggregate from the individual legs and checks it against RSSSF's printed total
 (the `agg` field). If anything disagrees, the build prints the offending ties and
-writes NOTHING. A wrong scoreline can't reach the database unnoticed.
+writes NOTHING - the rebuild happens in a temporary file, so a failed `--force`
+leaves the last known-good database exactly as it was. A wrong scoreline can't
+reach the database unnoticed, and a failed rebuild can't destroy a good one.
 
 Run:  python build_database.py            (builds if the DB is absent)
       python build_database.py --force    (rebuilds from scratch)
@@ -102,16 +104,21 @@ def build(force=False, db_path=None):
     Tests pass a temporary path so they never assume a stale on-disk file.
     """
     db_path = db_path or DB_PATH
-    if os.path.exists(db_path):
-        if not force:
-            print(f"Database already exists at {db_path}\nRe-run with --force to rebuild.")
-            return 0
-        os.remove(db_path)
+    if os.path.exists(db_path) and not force:
+        print(f"Database already exists at {db_path}\nRe-run with --force to rebuild.")
+        return 0
+
+    # Build into a temporary sibling and only replace db_path once everything
+    # (schema, inserts, verify()) has succeeded - a failed --force rebuild must
+    # never leave the last known-good database deleted.
+    tmp_path = db_path + ".tmp"
+    if os.path.exists(tmp_path):
+        os.remove(tmp_path)
 
     with open(SCHEMA_PATH, "r", encoding="utf-8") as fh:
         schema_sql = fh.read()
 
-    conn = sqlite3.connect(db_path)
+    conn = sqlite3.connect(tmp_path)
     conn.execute("PRAGMA foreign_keys = ON")
     cur = conn.cursor()
     cur.executescript(schema_sql)
@@ -120,7 +127,7 @@ def build(force=False, db_path=None):
     referenced = collect_referenced_keys()
     unknown = sorted(k for k in referenced if k not in CLUBS)
     if unknown:
-        conn.close(); os.remove(db_path)
+        conn.close(); os.remove(tmp_path)
         sys.exit(f"ERROR: season data references unknown club keys: {unknown}")
 
     unused = unused_club_keys(CLUBS, referenced)
@@ -211,26 +218,49 @@ def build(force=False, db_path=None):
     # ---- VERIFY before committing -----------------------------------------
     problems = verify(cur, club_id)
     if problems:
-        conn.rollback(); conn.close(); os.remove(db_path)
+        conn.rollback(); conn.close(); os.remove(tmp_path)
         print("\n".join(problems))
-        sys.exit(f"\nBUILD ABORTED: {len(problems)} data problem(s). Nothing written.")
+        sys.exit(f"\nBUILD ABORTED: {len(problems)} data problem(s). "
+                 f"{db_path} left untouched.")
 
     conn.commit()
     report(cur, db_path=db_path)
     conn.close()
+    os.replace(tmp_path, db_path)  # atomic swap - only now does the old file go
     return 0
 
 
+ALLOWED_SETTLEMENTS = {
+    "aggregate", "away_goals", "replay", "penalties",
+    "coin_toss", "single_match", "walkover", "bye",
+}
+
+
 def verify(cur, club_id, seasons=None):
-    """Recompute each tie's aggregate from its legs and check it against `agg`."""
+    """Recompute each tie's aggregate from its legs and check settlement consistency.
+
+    Beyond the aggregate/away-goals arithmetic, this also catches settlement
+    shapes that don't match their decided_by: a one-leg "aggregate" (should be
+    a walkover - see the Vorwarts-Linfield 1961-62 fix), a single_match with
+    more than one leg, a replay/coin_toss missing its play-off leg, or a
+    walkover/bye carrying legs or a missing winner.
+    """
     problems = []
     for s in (SEASONS if seasons is None else seasons):
         for rnd in s["rounds"]:
             for tie in rnd["ties"]:
                 a, b = tie["t1"], tie["t2"]
+                by, win, legs = tie["by"], tie["win"], tie["legs"]
                 ga = gb = 0
                 tag = f'{s["season_label"]} {rnd["name"]}: {a} v {b}'
-                for idx, leg in enumerate(tie["legs"]):
+
+                if by not in ALLOWED_SETTLEMENTS:
+                    problems.append(f'!! BY   {tag}: unknown decided_by={by!r}')
+
+                if win and win not in (a, b):
+                    problems.append(f'!! WIN  {tag}: winner {win} is not {a} or {b}')
+
+                for idx, leg in enumerate(legs):
                     h, aw, hs, as_, _ = leg_fields(leg)
                     if h not in (a, b) or aw not in (a, b):
                         problems.append(
@@ -246,17 +276,22 @@ def verify(cur, club_id, seasons=None):
                 if tie["agg"] is not None and (ga, gb) != tuple(tie["agg"]):
                     problems.append(f'!! AGG  {tag}: legs give {ga}-{gb}, RSSSF says {tie["agg"][0]}-{tie["agg"][1]}')
 
-                if tie["by"] == "aggregate":
+                if by == "aggregate":
+                    if len(legs) < 2:
+                        problems.append(
+                            f'!! LEGS {tag}: decided_by=aggregate but only {len(legs)} leg(s) '
+                            f'(a withdrawal after one leg should be a walkover)')
                     winner = a if ga > gb else (b if gb > ga else None)
-                    if winner != tie["win"]:
-                        problems.append(f'!! WIN  {tag}: higher aggregate is {winner}, data says {tie["win"]}')
-                if tie["by"] == "away_goals":
+                    if winner != win:
+                        problems.append(f'!! WIN  {tag}: higher aggregate is {winner}, data says {win}')
+
+                elif by == "away_goals":
                     if ga != gb:
                         problems.append(
                             f'!! AG   {tag}: decided_by=away_goals but aggregate is {ga}-{gb}, not level')
                     else:
                         aa = ab = 0
-                        for idx, leg in enumerate(tie["legs"]):
+                        for idx, leg in enumerate(legs):
                             if idx >= 2:
                                 continue
                             h, aw, hs, as_, _ = leg_fields(leg)
@@ -265,9 +300,41 @@ def verify(cur, club_id, seasons=None):
                             if aw == b:
                                 ab += as_
                         winner = a if aa > ab else (b if ab > aa else None)
-                        if winner != tie["win"]:
+                        if winner != win:
                             problems.append(
-                                f'!! AG   {tag}: away goals {aa}-{ab} imply {winner}, data says {tie["win"]}')
+                                f'!! AG   {tag}: away goals {aa}-{ab} imply {winner}, data says {win}')
+
+                elif by == "single_match":
+                    if len(legs) != 1:
+                        problems.append(f'!! LEGS {tag}: single_match expects 1 leg, has {len(legs)}')
+                    elif win:
+                        h, aw, hs, as_, _ = leg_fields(legs[0])
+                        scored_home = a if h == a else b
+                        actual = (scored_home if hs > as_ else
+                                  ((b if scored_home == a else a) if as_ > hs else None))
+                        if actual and actual != win:
+                            problems.append(
+                                f'!! WIN  {tag}: single-match score implies {actual}, data says {win}')
+
+                elif by in ("replay", "coin_toss"):
+                    if len(legs) < 3:
+                        problems.append(f'!! LEGS {tag}: {by} requires a play-off leg, has {len(legs)}')
+                    elif by == "replay" and win:
+                        h, aw, hs, as_, _ = leg_fields(legs[2])
+                        if hs != as_:
+                            po_home = a if h == a else b
+                            actual = po_home if hs > as_ else (b if po_home == a else a)
+                            if actual != win:
+                                problems.append(
+                                    f'!! WIN  {tag}: play-off score implies {actual}, data says {win}')
+
+                elif by in ("walkover", "bye"):
+                    if legs:
+                        problems.append(f'!! LEGS {tag}: {by} should have 0 legs, has {len(legs)}')
+                    if tie["agg"] is not None:
+                        problems.append(f'!! AGG  {tag}: {by} should have agg=None')
+                    if not win:
+                        problems.append(f'!! WIN  {tag}: {by} has no declared winner')
     return problems
 
 

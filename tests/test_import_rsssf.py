@@ -1,16 +1,20 @@
 # -*- coding: utf-8 -*-
 """Tests for tools/import_rsssf.py."""
 
+import io
 import os
 import sys
 import unittest
+from contextlib import redirect_stderr, redirect_stdout
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 
 from tools.import_rsssf import (
+    _is_ignorable_line,
     emit_tie_block,
+    main,
     match_club,
     parse_rsssf_line,
     validate_aggregate,
@@ -77,6 +81,52 @@ class TestParseRsssf(unittest.TestCase):
         block = emit_tie_block(parsed)
         self.assertIn('"by": "replay"', block)
         self.assertIn("real_madrid", block)
+
+
+class TestIgnoredLineReporting(unittest.TestCase):
+    """notes_002 Finding 7: a malformed line must be reported by number, not
+    silently dropped from a bulk transcription."""
+
+    def test_blank_and_comment_lines_are_not_ignorable_warnings(self):
+        self.assertTrue(_is_ignorable_line(""))
+        self.assertTrue(_is_ignorable_line("# a comment"))
+        self.assertTrue(_is_ignorable_line("Additional matches not yet dated"))
+
+    def test_malformed_line_is_not_ignorable(self):
+        self.assertFalse(_is_ignorable_line("this is not an RSSSF result line"))
+
+    def test_main_reports_malformed_line_by_number(self):
+        lines = (
+            "Heart Of Midlothian      Sco  SL Benfica               Por   1-2  0-3  1-5\n"
+            "this line is garbled and will not parse\n"
+            "Real Madrid               Esp  Reims                    Fra   2-0\n"
+        )
+        original_stdin = sys.stdin
+        sys.stdin = io.StringIO(lines)
+        out, err = io.StringIO(), io.StringIO()
+        try:
+            with redirect_stdout(out), redirect_stderr(err):
+                code = main(["--stdin", "--season", "1999-00"])
+        finally:
+            sys.stdin = original_stdin
+        self.assertEqual(code, 0)
+        self.assertIn("line 2", err.getvalue())
+        self.assertIn("garbled", err.getvalue())
+
+    def test_no_warning_when_every_line_parses(self):
+        lines = (
+            "Heart Of Midlothian      Sco  SL Benfica               Por   1-2  0-3  1-5\n"
+        )
+        original_stdin = sys.stdin
+        sys.stdin = io.StringIO(lines)
+        out, err = io.StringIO(), io.StringIO()
+        try:
+            with redirect_stdout(out), redirect_stderr(err):
+                code = main(["--stdin", "--season", "1999-00"])
+        finally:
+            sys.stdin = original_stdin
+        self.assertEqual(code, 0)
+        self.assertNotIn("ignored", err.getvalue())
 
 
 if __name__ == "__main__":
