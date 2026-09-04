@@ -14,7 +14,7 @@ The v1.5 working baseline contains:
 - European Cup coverage from **1955-56 through 1961-62**;
 - the inaugural European Cup Winners' Cup **1960-61**;
 - an Inter-Cities Fairs Cup lineage definition ready for its first edition;
-- 113 passing automated tests; and
+- 115 passing automated tests; and
 - a clean SQLite integrity check with aggregate and foreign-key validation.
 
 The generated row counts are a point-in-time snapshot. They must be refreshed

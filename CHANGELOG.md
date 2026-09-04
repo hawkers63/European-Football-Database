@@ -1,6 +1,14 @@
 # Changelog
 
 ## Unreleased - v1.6 Classic competitions expansion
+- Fixed the `lineage` table only getting rows for lineages with a seeded
+  edition. The Inter-Cities Fairs Cup is configured in `LINEAGES` but has no
+  season yet, so it never got inserted - `app.py`'s competition menu (which
+  reads `lineage` directly, not via `edition`) and any other lineage-first
+  tooling couldn't see it. `build_database.py` now inserts every entry in
+  `LINEAGES` up front; `lineage` row count goes from 2 to 3. The menu now
+  offers "Inter-Cities Fairs Cup" with an empty season list (`_on_season`
+  already no-ops when there's no matching edition, so this doesn't crash).
 - Fixed `club_name_history` attaching a club's period name to every edition
   sharing its season_label, regardless of lineage. `cwks_warsaw` (Legia
   Warsaw) and `wismut` only played the European Cup in 1960-61, but were

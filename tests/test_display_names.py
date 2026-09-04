@@ -189,6 +189,23 @@ class TestDisplayNameAgainstDb(unittest.TestCase):
         self.assertIn("European Cup", names)
         self.assertIn("European Cup Winners' Cup", names)
 
+    def test_all_configured_lineages_inserted(self):
+        """Inter-Cities Fairs Cup has no seeded edition yet but is still a
+        configured LINEAGES entry - it must exist in the table so the UI/CLI
+        can see it before its first season is added."""
+        rows = self.cur.execute("SELECT name FROM lineage").fetchall()
+        names = {r["name"] for r in rows}
+        for expected in LINEAGES:
+            self.assertIn(expected, names)
+
+    def test_fairs_cup_has_no_editions_yet(self):
+        n = self.cur.execute(
+            """SELECT COUNT(*) AS c FROM edition e
+               JOIN lineage l ON l.lineage_id = e.lineage_id
+               WHERE l.name = 'Inter-Cities Fairs Cup'"""
+        ).fetchone()["c"]
+        self.assertEqual(n, 0)
+
     def test_name_history_scoped_to_contested_lineage_not_shared_label(self):
         """cwks_warsaw and wismut only played the European Cup in 1960-61, not
         the Cup Winners' Cup - their period names must not leak onto the CWC

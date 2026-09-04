@@ -135,8 +135,12 @@ def build(force=False, db_path=None):
         club_id[key] = cur.lastrowid
 
     # ---- lineages ---------------------------------------------------------
+    # Insert every configured lineage, not just ones with a seeded edition -
+    # otherwise a trophy line (e.g. Inter-Cities Fairs Cup) stays invisible
+    # to the UI/CLI until its first season is added.
+    seeded_names = dict.fromkeys(s["lineage"] for s in SEASONS)
     lineage_id = {}
-    for name in dict.fromkeys(s["lineage"] for s in SEASONS):
+    for name in list(LINEAGES) + [n for n in seeded_names if n not in LINEAGES]:
         note = LINEAGES.get(name, "")
         if name not in LINEAGES:
             print("WARNING: lineage %r has no LINEAGES entry; inserting with empty notes." % name)
