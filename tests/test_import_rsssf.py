@@ -58,6 +58,26 @@ class TestParseRsssf(unittest.TestCase):
         self.assertEqual(key, "cwks_warsaw")
         self.assertGreaterEqual(conf, 0.9)
 
+    def test_hibernians_malta_not_edinburgh(self):
+        key, conf = match_club("Hibernians (Paola)")
+        self.assertEqual(key, "hibernians_malta")
+        self.assertGreaterEqual(conf, 0.9)
+        key2, _ = match_club("Hibernian")
+        self.assertEqual(key2, "hibernian")
+
+    def test_1961_62_juventus_real_playoff_line(self):
+        line = ("Juventus                 Ita  Real Madrid              Esp   "
+                "0-1  1-0  1-1  [1-3]x")
+        parsed = parse_rsssf_line(line)
+        self.assertEqual(parsed["agg"], (1, 1))
+        self.assertEqual(parsed["playoff"], (1, 3))
+        self.assertEqual(parsed["a_key"], "juventus")
+        self.assertEqual(parsed["b_key"], "real_madrid")
+        self.assertEqual(validate_aggregate(parsed), [])
+        block = emit_tie_block(parsed)
+        self.assertIn('"by": "replay"', block)
+        self.assertIn("real_madrid", block)
+
 
 if __name__ == "__main__":
     unittest.main()

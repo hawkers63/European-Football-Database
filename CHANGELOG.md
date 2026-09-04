@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.5 - European Cup 1961-62
+- Seeded European Cup **1961-62** from RSSSF (James M. Ross): Benfica retained the
+  trophy, beating Real Madrid 5-3 in Amsterdam.
+- Eight new clubs in `clubs.py` (Nürnberg, Hibernians of Paola, Feyenoord,
+  Górnik Zabrze, Tottenham, Monaco, B1913 Odense, Haka). Period names for
+  Feijenoord and Valkeakosken Haka.
+- Oddities recorded: Linfield withdrew after a 3-0 first leg; Vorwärts–Rangers
+  2nd leg relocated to Malmö and replayed after fog; Juventus–Real Madrid
+  play-off in Paris. Holders Benfica, Fenerbahçe and Haka had byes.
+- `tools/import_rsssf.py` aliases extended for the new clubs (Hibernians must
+  not fuzzy-match Hibernian Edinburgh).
+
 ## v1.4 - Stats analyst (head-to-head, goals, leaderboards)
 - Shared helpers in `queries.py` derive head-to-head records, goal statistics
   and all-time club leaderboards from `match` / `tie` / `edition` rows (no

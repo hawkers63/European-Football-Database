@@ -4,6 +4,9 @@ Adding a season is dropping one dict into `seasons.py` (and any brand-new clubs
 into `clubs.py`). The build verifies your entries against RSSSF's own aggregates,
 so a slip fails the build instead of shipping a wrong scoreline.
 
+European Cup is seeded through **1961-62** (Benfica retained the trophy against
+Real Madrid). Cup Winners' Cup remains at the inaugural **1960-61**.
+
 ## 1. New clubs → `clubs.py`
 
 For any club not already in the registry, add a keyed entry:

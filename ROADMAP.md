@@ -18,7 +18,8 @@ Unseeded / seeded two-legged knockouts, from 1955 to the mid-1990s rebrands.
       auto-aggregate, winner highlighting.
 - [x] European Cup **1955-56 → 1959-60** seeded (the Real Madrid five-in-a-row).
 - [x] European Cup **1960-61** seeded (Benfica's first title).
-- [ ] Continue the European Cup season by season (1961-62 onward).
+- [x] European Cup **1961-62** seeded (Benfica retained the trophy).
+- [ ] Continue the European Cup season by season (1962-63 onward).
 - [x] European Cup Winners' Cup inaugural **1960-61** seeded (Fiorentina).
 - [ ] Continue Cup Winners' Cup and add Inter-Cities Fairs Cup → UEFA Cup.
 - [x] Optional viewer polish: a proper bracket view for pure knockout rounds.

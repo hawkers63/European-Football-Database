@@ -58,6 +58,84 @@ class TestSeasons196061(unittest.TestCase):
         self.assertEqual(hits[0]["runner_up"], "rangers")
 
 
+class TestSeasons196162(unittest.TestCase):
+    def _ec(self):
+        hits = [s for s in SEASONS
+                if s["season_label"] == "1961-62" and s["lineage"] == "European Cup"]
+        self.assertEqual(len(hits), 1)
+        return hits[0]
+
+    def test_european_cup_1961_62_champion_and_runner_up(self):
+        s = self._ec()
+        self.assertEqual(s["winner"], "benfica")
+        self.assertEqual(s["runner_up"], "real_madrid")
+        self.assertFalse(s["away_goals_active"])
+
+    def test_benfica_tottenham_semi_aggregate(self):
+        """RSSSF: Benfica 3-1, 1-2 Tottenham — 4-3 aggregate."""
+        s = self._ec()
+        found = None
+        for rnd in s["rounds"]:
+            for tie in rnd["ties"]:
+                if {tie["t1"], tie["t2"]} == {"benfica", "tottenham"}:
+                    found = tie
+        self.assertIsNotNone(found)
+        self.assertEqual(found["agg"], (4, 3))
+        self.assertEqual(found["win"], "benfica")
+        self.assertEqual(found["by"], "aggregate")
+
+    def test_juventus_real_madrid_playoff(self):
+        s = self._ec()
+        found = None
+        for rnd in s["rounds"]:
+            for tie in rnd["ties"]:
+                if {tie["t1"], tie["t2"]} == {"juventus", "real_madrid"}:
+                    found = tie
+        self.assertIsNotNone(found)
+        self.assertEqual(found["by"], "replay")
+        self.assertEqual(found["agg"], (1, 1))
+        self.assertEqual(found["win"], "real_madrid")
+        self.assertEqual(len(found["legs"]), 3)
+
+    def test_linfield_withdrew_after_first_leg(self):
+        s = self._ec()
+        found = None
+        for rnd in s["rounds"]:
+            for tie in rnd["ties"]:
+                if {tie["t1"], tie["t2"]} == {"vorwarts", "linfield"}:
+                    found = tie
+        self.assertIsNotNone(found)
+        self.assertEqual(found["win"], "vorwarts")
+        self.assertEqual(found["agg"], (3, 0))
+        self.assertEqual(len(found["legs"]), 1)
+        self.assertIn("withdrew", found["note"].lower())
+
+
+class TestClassicEraGoldenUnchanged(unittest.TestCase):
+    def test_five_in_a_row_champions(self):
+        expected = {
+            "1955-56": ("real_madrid", "reims"),
+            "1956-57": ("real_madrid", "fiorentina"),
+            "1957-58": ("real_madrid", "milan"),
+            "1958-59": ("real_madrid", "reims"),
+            "1959-60": ("real_madrid", "eintracht"),
+        }
+        for label, (winner, runner) in expected.items():
+            hits = [s for s in SEASONS
+                    if s["season_label"] == label and s["lineage"] == "European Cup"]
+            self.assertEqual(len(hits), 1, label)
+            self.assertEqual(hits[0]["winner"], winner, label)
+            self.assertEqual(hits[0]["runner_up"], runner, label)
+
+    def test_1955_56_servette_real_madrid_aggregate(self):
+        s = next(x for x in SEASONS
+                 if x["season_label"] == "1955-56" and x["lineage"] == "European Cup")
+        tie = s["rounds"][0]["ties"][0]
+        self.assertEqual(tie["t1"], "servette")
+        self.assertEqual(tie["t2"], "real_madrid")
+        self.assertEqual(tie["agg"], (0, 7))
+
+
 @unittest.skipUnless(os.path.exists(DB_PATH), "european_football.db not built yet")
 class TestDisplayNameAgainstDb(unittest.TestCase):
     @classmethod

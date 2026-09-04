@@ -141,6 +141,19 @@ CLUBS = {
                       "notes": "Listed by RSSSF as FC Lucerne."},
     "austria_wien":  {"name": "FK Austria Wien",      "country": "AUT", "city": "Vienna"},
     "gladbach":      {"name": "Borussia Mönchengladbach", "country": "FRG", "city": "Mönchengladbach"},
+
+    # --- added 1961-62 European Cup -----------------------------------------
+    "nurnberg":      {"name": "1. FC Nürnberg",       "country": "FRG", "city": "Nuremberg"},
+    "hibernians_malta": {"name": "Hibernians",        "country": "MLT", "city": "Paola",
+                      "notes": "Paola, Malta; distinct from Hibernian (Edinburgh)."},
+    "feyenoord":     {"name": "Feyenoord",            "country": "NED", "city": "Rotterdam",
+                      "notes": "Spelt Feijenoord in this era; RSSSF uses Feĳenoord."},
+    "gornik":        {"name": "Górnik Zabrze",        "country": "POL", "city": "Zabrze"},
+    "tottenham":     {"name": "Tottenham Hotspur",    "country": "ENG", "city": "London"},
+    "monaco":        {"name": "AS Monaco",            "country": "FRA", "city": "Monaco"},
+    "b1913":         {"name": "B1913 Odense",         "country": "DEN", "city": "Odense"},
+    "haka":          {"name": "Haka Valkeakoski",     "country": "FIN", "city": "Valkeakoski",
+                      "notes": "Listed by RSSSF as Valkeakosken Haka."},
 }
 
 
@@ -188,5 +201,17 @@ CLUB_NAME_HISTORY = [
         "season_label": "1960-61",
         "name_used": "Wismut Karl-Marx-Stadt",
         "notes": "Now Chemnitzer FC.",
+    },
+    {
+        "club": "feyenoord",
+        "season_label": "1961-62",
+        "name_used": "Feijenoord",
+        "notes": "Dutch spelling in use until the 1970s; RSSSF prints Feĳenoord.",
+    },
+    {
+        "club": "haka",
+        "season_label": "1961-62",
+        "name_used": "Valkeakosken Haka",
+        "notes": "Period name as listed by RSSSF.",
     },
 ]

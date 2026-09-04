@@ -154,8 +154,9 @@ class TestStats(unittest.TestCase):
         self.assertEqual(titles[0]["titles"], 5)
         rec = club_record(self.cur, self.real_madrid)
         self.assertEqual(rec["titles"], 5)
-        self.assertEqual(rec["runner_up_finishes"], 0)
-        self.assertEqual(rec["finals_reached"], 5)
+        # 1961-62 European Cup final: runners-up to Benfica.
+        self.assertEqual(rec["runner_up_finishes"], 1)
+        self.assertEqual(rec["finals_reached"], 6)
 
     def test_eintracht_1959_60_runners_up(self):
         row = self.cur.execute(
@@ -192,12 +193,13 @@ class TestStats(unittest.TestCase):
             "SELECT COUNT(*) AS n FROM edition WHERE winner_club_id IS NOT NULL"
         ).fetchone()["n"]
         self.assertEqual(sum(r["titles"] for r in board), sql_total)
-        # Real Madrid top; Benfica and Fiorentina one each (EC + CWC 1960-61).
+        # Real Madrid still top on five titles; Benfica two (1960-61 and 1961-62).
         self.assertEqual(board[0]["name"], "Real Madrid")
         self.assertEqual(board[0]["rank"], 1)
-        one_title = [r["name"] for r in board if r["titles"] == 1]
-        self.assertIn("SL Benfica", one_title)
-        self.assertIn("Fiorentina", one_title)
+        self.assertEqual(board[0]["titles"], 5)
+        titles_by_name = {r["name"]: r["titles"] for r in board}
+        self.assertEqual(titles_by_name["SL Benfica"], 2)
+        self.assertEqual(titles_by_name["Fiorentina"], 1)
 
     def test_matches_leaderboard_double_counts_each_match(self):
         board = leaderboard_matches(self.cur)
