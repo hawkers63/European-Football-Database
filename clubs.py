@@ -175,6 +175,15 @@ CLUBS = {
     "vardar":        {"name": "FK Vardar",             "country": "YUG", "city": "Skopje"},
     "dynamo_zilina": {"name": "Dynamo Žilina",         "country": "TCH", "city": "Žilina",
                       "notes": "Now MŠK Žilina."},
+
+    # --- added 1962-63 European Cup -----------------------------------------
+    "union_lux":     {"name": "Union Luxembourg",      "country": "LUX", "city": "Luxembourg City"},
+    "ipswich":       {"name": "Ipswich Town",          "country": "ENG", "city": "Ipswich"},
+    "shelbourne":    {"name": "Shelbourne",            "country": "IRL", "city": "Dublin"},
+    "dundee":        {"name": "Dundee",                "country": "SCO", "city": "Dundee"},
+    "koln":          {"name": "1. FC Köln",            "country": "FRG", "city": "Cologne"},
+    "esbjerg":       {"name": "Esbjerg fB",            "country": "DEN", "city": "Esbjerg"},
+    "partizani_tirana": {"name": "FK Partizani Tiranë", "country": "ALB", "city": "Tirana"},
 }
 
 

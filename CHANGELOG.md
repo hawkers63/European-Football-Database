@@ -1,6 +1,16 @@
 # Changelog
 
 ## Unreleased - v1.6 Classic competitions expansion
+- Seeded and verified European Cup **1962-63** (second of the three v1.6
+  target editions): AC Milan won their first European Cup, beating holders
+  Benfica 2-1 at Wembley. Sourced directly from RSSSF
+  (`rsssf.org/ec/ec196263.html`), leg-by-leg cross-checked before entry.
+  7 new canonical clubs. Reims played several home legs at Parc des
+  Princes in Paris rather than their own ground; two ties (Servette-
+  Feyenoord, Feyenoord-Vasas) went to a genuine two-legged-tie-plus-
+  play-off replay, exercising the ordinary 3-leg `replay` shape alongside
+  the new 2-leg agg=None shape from the CWC final.
+  - `lineage=3, club=121, edition=10, round=48, tie=227, match=454`.
 - Seeded and verified Cup Winners' Cup **1961-62** (first of the three v1.6
   target editions): Atlético Madrid won UEFA's first directly-organised
   Cup Winners' Cup, beating holders Fiorentina in a replayed final (1-1 aet

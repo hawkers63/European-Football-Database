@@ -172,6 +172,61 @@ class TestCWC196162(unittest.TestCase):
         self.assertGreaterEqual(relocated, 3)
 
 
+class TestEC196263(unittest.TestCase):
+    def _ec(self):
+        hits = [s for s in SEASONS
+                if s["season_label"] == "1962-63" and s["lineage"] == "European Cup"]
+        self.assertEqual(len(hits), 1)
+        return hits[0]
+
+    def _tie(self, s, a, b):
+        for rnd in s["rounds"]:
+            for tie in rnd["ties"]:
+                if {tie["t1"], tie["t2"]} == {a, b}:
+                    return tie
+        return None
+
+    def test_champion_and_runner_up(self):
+        s = self._ec()
+        self.assertEqual(s["winner"], "milan")
+        self.assertEqual(s["runner_up"], "benfica")
+        self.assertFalse(s["away_goals_active"])
+
+    def test_milan_union_lux_first_round_aggregate(self):
+        """RSSSF: Milan 8-0, 6-0 US Luxembourg - 14-0 aggregate."""
+        s = self._ec()
+        found = self._tie(s, "milan", "union_lux")
+        self.assertIsNotNone(found)
+        self.assertEqual(found["agg"], (14, 0))
+        self.assertEqual(found["win"], "milan")
+        self.assertEqual(found["by"], "aggregate")
+
+    def test_servette_feyenoord_needed_a_genuine_playoff_leg(self):
+        """Level 4-4 on aggregate over two real legs, then a third play-off
+        leg in Dusseldorf (Feyenoord won it 3-1 aet) - the ordinary
+        two-legged-tie-plus-play-off replay shape, unlike the CWC final."""
+        s = self._ec()
+        found = self._tie(s, "servette", "feyenoord")
+        self.assertIsNotNone(found)
+        self.assertEqual(found["by"], "replay")
+        self.assertEqual(found["agg"], (4, 4))
+        self.assertEqual(len(found["legs"]), 3)
+        self.assertEqual(found["win"], "feyenoord")
+
+    def test_reims_home_legs_relocated_to_paris(self):
+        s = self._ec()
+        relocated = 0
+        for rnd in s["rounds"]:
+            for tie in rnd["ties"]:
+                if "reims" not in (tie["t1"], tie["t2"]):
+                    continue
+                for leg in tie["legs"]:
+                    extras = leg[4] if len(leg) > 4 else {}
+                    if "Paris" in (extras.get("venue") or ""):
+                        relocated += 1
+        self.assertGreaterEqual(relocated, 2)
+
+
 class TestClassicEraGoldenUnchanged(unittest.TestCase):
     def test_five_in_a_row_champions(self):
         expected = {
