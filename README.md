@@ -2,27 +2,29 @@
 
 A standalone desktop database of UEFA club competitions, built the way the old
 *Yearbook of European Football* felt: one clean reference you can page through.
-The current data covers the **unseeded two-legged knockout era**, with the
-European Cup seeded from **1955-56 through 1961-62** and the inaugural European
-Cup Winners' Cup **1960-61**.
+The current data covers the **unseeded two-legged knockout era**: the European
+Cup seeded from **1955-56 through 1962-63**, the European Cup Winners' Cup
+from its inaugural **1960-61** through **1961-62**, and the inaugural
+Inter-Cities Fairs Cup **1955-58**.
 
 Stack: Python + CustomTkinter (UI) · SQLite (data, bundleable into a `.exe`).
 
-**Current baseline:** v1.5 · **Next development release:** v1.6, Classic
-competitions expansion. See [`ROADMAP.md`](ROADMAP.md) for release scope and
-acceptance gates.
+**Current baseline:** v1.6 · **Next development release:** v1.7, yearbook
+navigation and statistics wiring. See [`ROADMAP.md`](ROADMAP.md) for release
+scope and acceptance gates.
 
 Group-stage and league-phase prototypes exist on `feat/modern-era-parser`, but
 they remain outside the baseline until the v2.0 integration gates are met.
 
 ## Current coverage
 
-- 2 seeded trophy lineages and 8 complete editions
-- 99 canonical clubs across 29 historical association codes
-- 38 rounds, 176 ties and 351 matches
-- Full match dates for the European Cup 1961-62; selected dates, venues,
-  attendances and referees for earlier editions
-- 119 passing automated tests at the v1.5 baseline
+- 3 seeded trophy lineages and 11 complete editions
+- 130 canonical clubs across 31 historical association codes
+- 51 rounds, 238 ties and 477 matches
+- Full match dates for the European Cup 1961-62; final-only dates for the
+  three v1.6 editions; selected dates, venues, attendances and referees for
+  earlier editions
+- 156 passing automated tests at the v1.6 baseline
 
 ## Files
 
@@ -36,7 +38,7 @@ they remain outside the baseline until the v2.0 integration gates are met.
 | `ui/` | Modular widgets, yearbook palette, and batched data loaders. |
 | `queries.py`, `cli.py` | Shared statistics plus club, head-to-head, goals, leaderboard, season and JSON commands. |
 | `tools/import_rsssf.py` | Drafts season data from pasted RSSSF result lines and checks aggregates. |
-| `european_football.db` | Generated database (99 clubs, 8 editions, 176 ties, 351 matches). |
+| `european_football.db` | Generated database (130 clubs, 11 editions, 238 ties, 477 matches). |
 | `ROADMAP.md`, `DATA_GUIDE.md`, `CHANGELOG.md` | Plan, how to add a season, history. |
 
 ## Running it

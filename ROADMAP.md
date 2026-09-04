@@ -7,14 +7,15 @@ stages and the modern league phase.
 
 ## Current verified snapshot
 
-The v1.5 working baseline contains:
+The v1.6 working baseline contains:
 
-- 2 seeded competition lineages, 8 editions and 99 canonical clubs;
-- 38 rounds, 176 ties and 351 matches;
-- European Cup coverage from **1955-56 through 1961-62**;
-- the inaugural European Cup Winners' Cup **1960-61**;
-- an Inter-Cities Fairs Cup lineage definition ready for its first edition;
-- 119 passing automated tests; and
+- 3 seeded competition lineages, 11 editions and 130 canonical clubs;
+- 51 rounds, 238 ties and 477 matches;
+- European Cup coverage from **1955-56 through 1962-63**;
+- European Cup Winners' Cup coverage from the inaugural **1960-61** through
+  **1961-62**;
+- the inaugural Inter-Cities Fairs Cup **1955-58**;
+- 156 passing automated tests; and
 - a clean SQLite integrity check with aggregate and foreign-key validation.
 
 The generated row counts are a point-in-time snapshot. They must be refreshed
@@ -94,6 +95,32 @@ whenever a season is added.
 - [x] Extended importer aliases to distinguish Hibernians of Paola from
       Hibernian of Edinburgh.
 
+### v1.6 — Classic competitions expansion
+
+- [x] Seeded and verified European Cup **1962-63** (AC Milan's first title,
+      beating holders Benfica at Wembley).
+- [x] Seeded and verified Cup Winners' Cup **1961-62** (Atlético Madrid, after
+      a replayed final against holders Fiorentina).
+- [x] Seeded and verified the inaugural Inter-Cities Fairs Cup **1955-58**
+      (Barcelona) - the lineage's first edition, mixing real clubs with
+      ad-hoc city representative XIs across a four-group First Round.
+- [x] Extended `verify()` with settlement-shape checks (single_match,
+      replay/coin_toss, walkover/bye and a one-leg "aggregate" are all now
+      rejected when their leg count doesn't match `decided_by`) - the exact
+      class of bug behind the Vorwärts-Linfield fix earlier in this release.
+- [x] Made `build_database.py --force` atomic: it rebuilds into a temporary
+      file and only replaces the working database after `verify()` passes,
+      so a failed rebuild can no longer delete the last known-good database.
+- [x] Fixed a cursor-reuse bug in `cli.py` (`_export_edition()` and
+      `cmd_season()`) that silently truncated JSON exports and printed only
+      a tie's first leg regardless of how many it actually had.
+- [x] `tools/import_rsssf.py` now reports ignored non-blank lines by number
+      instead of silently dropping malformed input during bulk transcription.
+- [x] 31 new canonical clubs across the three editions.
+- [ ] Edition-level source provenance in a machine-checkable form, and a
+      measured match-date backfill for pre-1961-62 editions, are deferred to
+      a future data pass rather than blocking this release.
+
 ### Engineering baseline completed across v1.x
 
 - [x] Added regression coverage for database integrity, the build pipeline,
@@ -126,36 +153,39 @@ small and reviewable.
 
 ## Planned releases
 
-### v1.6 — Classic competitions expansion
+### v1.7 — Yearbook navigation and statistics wiring
 
-**Goal:** turn the stable v1.x foundation into a repeatable season-by-season data
-programme without mixing in group-stage schema work.
+**Goal:** make a loaded season readable as a yearbook - a club's campaign
+path, a dated chronology, and a highlighted winner's route - without opening
+the group-stage branch, and finish wiring the v1.4 statistics helpers into
+the CLI and viewer rather than leaving them CLI-only.
 
 Planned scope:
 
-- [ ] Seed and verify European Cup **1962-63**.
-- [ ] Seed and verify Cup Winners' Cup **1961-62**.
-- [ ] Add the first Inter-Cities Fairs Cup edition (**1955-58**) so the configured
-      lineage becomes queryable in the database and UI.
-- [ ] Add any new canonical clubs, period names, importer aliases and documented
-      competition oddities required by those editions.
-- [ ] Store full match dates when the source provides them and begin a measured
-      backfill for earlier editions; do not invent missing attendance or referee
-      data.
-- [ ] Record edition-level source provenance in a consistent, machine-checkable
-      form before large-scale transcription accelerates.
-- [ ] Refresh README and data-guide coverage figures after the database rebuild.
+- [ ] Add `club_campaign()`, `edition_chronology()` and `winner_path_club_ids()`
+      query helpers; new `cli.py` `path` and `chronology` subcommands.
+- [ ] Extend `LEADERBOARD_KINDS` to include `wins` and `gd`, matching the
+      leaderboard functions that already exist but aren't exposed.
+- [ ] Scope `club_record()`'s hat-trick notes to `season_label` when given,
+      so a season-filtered query doesn't leak notes from other seasons.
+- [ ] Wire the v1.4 statistics helpers into the desktop viewer's club profile
+      (it currently uses its own batched SQL) and highlight the champion's
+      route on the fixtures list and bracket using the existing victory-green
+      token.
+- [ ] Extend `verify()` to reject `decided_by='away_goals'` when the
+      edition's `away_goals_active` flag is false, ahead of any 1965-66+
+      seeding (the flag's historical population/abolition stays a v3.0 item).
 
 Release gates:
 
-- `python build_database.py --force` completes with every printed aggregate
-  verified and no foreign-key violations.
-- `python -m pytest -q` passes, including champion, runner-up and representative
-  aggregate checks for every new edition.
-- The verified European Cup **1955-56 through 1959-60** golden data remains
-  unchanged.
+- `python build_database.py --force` and `python -m pytest -q` remain green;
+  Classic Era 1955-60 golden data unchanged.
+- `python cli.py path <club> <season>` and `python cli.py chronology <season>`
+  run against real seeded data with stored scorelines only.
+- The viewer's club profile and fixtures list consume the shared query
+  helpers rather than UI-only SQL.
 
-Not in scope: group tables, Swiss-format logic or a broad UI redesign.
+Not in scope: group tables, Swiss-format logic, or seeding new editions.
 
 ### v2.0 — Group Stage Era
 
