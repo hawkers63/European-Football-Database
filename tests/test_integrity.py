@@ -172,6 +172,25 @@ class TestMatchInsertPens(unittest.TestCase):
         self.assertIsNone(row[8])
         self.assertEqual(row[9], 0)
 
+    def test_insert_sql_includes_notes_column(self):
+        self.assertIn("notes", MATCH_INSERT_SQL)
+
+    def test_notes_extracted_from_extras(self):
+        club_id = {"home": 1, "away": 2}
+        leg = ("home", "away", 1, 1, {"notes": "Di Stefano hat-trick."})
+        row = match_insert_tuple(10, 1, club_id, leg)
+        self.assertEqual(row[-1], "Di Stefano hat-trick.")
+
+    def test_notes_are_null_when_absent(self):
+        club_id = {"home": 1, "away": 2}
+        row = match_insert_tuple(1, 1, club_id, ("home", "away", 2, 0))
+        self.assertIsNone(row[-1])
+
+    def test_insert_tuple_length_matches_sql_placeholders(self):
+        club_id = {"home": 1, "away": 2}
+        row = match_insert_tuple(1, 1, club_id, ("home", "away", 2, 0))
+        self.assertEqual(len(row), MATCH_INSERT_SQL.count("?"))
+
 
 @unittest.skipUnless(os.path.exists(DB_PATH), "european_football.db not built yet")
 class TestBuiltDatabase(unittest.TestCase):

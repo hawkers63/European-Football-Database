@@ -12,7 +12,9 @@ Leg format (a tuple):
     (home_key, away_key, home_score, away_score, extras_dict)
 
 extras_dict may contain: "venue", "date" (ISO), "att", "ref", "aet" (True),
-                "home_pens", "away_pens" (shootout scores).
+                "home_pens", "away_pens" (shootout scores), "notes" (per-leg
+                detail such as a hat-trick or an abandoned/relocated match -
+                for anything about the tie as a whole, use the tie's "note").
 
 Tie format (a dict):
     t1, t2      club keys (t1 = first-named side / first-leg host)

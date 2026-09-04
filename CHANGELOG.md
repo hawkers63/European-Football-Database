@@ -1,6 +1,13 @@
 # Changelog
 
 ## Unreleased - v1.6 Classic competitions expansion
+- Fixed `match.notes` being schema'd but never written. `queries.py`
+  (`_MATCH_SELECT`, `hat_trick_notes()`) already read it, but
+  `MATCH_INSERT_SQL` / `match_insert_tuple()` never included it, so
+  per-leg detail (a hat-trick, an abandoned or relocated match) could only
+  live on `tie.notes`. `L(..., notes="...")` now flows through to
+  `match.notes` with no new helper needed. No existing season data moved -
+  this is the write-path fix, not a data migration.
 - Fixed the `lineage` table only getting rows for lineages with a seeded
   edition. The Inter-Cities Fairs Cup is configured in `LINEAGES` but has no
   season yet, so it never got inserted - `app.py`'s competition menu (which

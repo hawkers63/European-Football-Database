@@ -30,8 +30,8 @@ SCHEMA_PATH = os.path.join(HERE, "schema.sql")
 MATCH_INSERT_SQL = """INSERT INTO match
    (tie_id, leg_number, match_date, home_club_id, away_club_id,
     home_score, away_score, home_pens, away_pens, after_extra_time,
-    venue, attendance, referee)
-   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)"""
+    venue, attendance, referee, notes)
+   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)"""
 
 
 def leg_fields(leg):
@@ -48,6 +48,7 @@ def match_insert_tuple(tie_id, leg_number, club_id, leg):
         tie_id, leg_number, x.get("date"), club_id[h], club_id[a], hs, as_,
         x.get("home_pens"), x.get("away_pens"),
         1 if x.get("aet") else 0, x.get("venue"), x.get("att"), x.get("ref"),
+        x.get("notes"),
     )
 
 
