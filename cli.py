@@ -9,6 +9,8 @@ Examples:
   python cli.py goals real_madrid
   python cli.py goals --season 1959-60
   python cli.py leaderboard titles
+  python cli.py path benfica 1961-62
+  python cli.py chronology 1961-62
   python cli.py season 1960-61
   python cli.py export 1960-61 --format json
 """
@@ -25,8 +27,10 @@ from clubs import CLUBS
 from queries import (
     LEADERBOARD_KINDS,
     LEADERBOARD_SORT,
+    club_campaign,
     club_record,
     connect,
+    edition_chronology,
     get_club_display_name,
     head_to_head,
     leaderboard,
@@ -236,6 +240,73 @@ def cmd_goals(args):
     conn.close()
 
 
+def _leg_line(leg):
+    if leg["home_score"] is None or leg["away_score"] is None:
+        score = "?-?"
+    else:
+        score = "%s-%s" % (leg["home_score"], leg["away_score"])
+    if leg["after_extra_time"]:
+        score += " aet"
+    loc = (" @ " + leg["venue"]) if leg["venue"] else ""
+    body = "%s %s %s%s" % (leg["home"], score, leg["away"], loc)
+    return "%s: %s" % (leg["date"], body) if leg["date"] else body
+
+
+def cmd_path(args):
+    key = _resolve_club_key(args.club_key)
+    conn = _require_db()
+    cur = conn.cursor()
+    cid = _club_id(cur, key)
+    name = CLUBS[key]["name"]
+    path = club_campaign(cur, cid, args.season_label)
+    if not path:
+        conn.close()
+        sys.exit("%s did not play in season %s (per the loaded database)." % (
+            name, args.season_label))
+    print("%s campaign: %s" % (name, args.season_label))
+    print("=" * 64)
+    for tie in path:
+        result = "WON " if tie["won"] else "LOST"
+        print("  [%s] %s (%s): vs %s  [%s]" % (
+            result, tie["round_name"], tie["competition_name"],
+            tie["opponent"], tie["decided_by"]))
+        if tie["notes"]:
+            print("        %s" % tie["notes"])
+        for leg in tie["legs"]:
+            print("        L%d %s" % (leg["leg_number"], _leg_line(leg)))
+    conn.close()
+
+
+def cmd_chronology(args):
+    conn = _require_db()
+    cur = conn.cursor()
+    try:
+        chron = edition_chronology(cur, args.season_label)
+    except KeyError:
+        conn.close()
+        sys.exit("No edition found for season %s" % args.season_label)
+    total = cur.execute(
+        """SELECT COUNT(*) AS n FROM match m
+             JOIN tie t ON t.tie_id = m.tie_id
+             JOIN round r ON r.round_id = t.round_id
+             JOIN edition e ON e.edition_id = r.edition_id
+            WHERE e.season_label = ?""",
+        (args.season_label,),
+    ).fetchone()["n"]
+    print("Chronology: %s" % args.season_label)
+    print("=" * 64)
+    for m in chron:
+        line = _leg_line({
+            "date": m["date"], "home": m["home"], "away": m["away"],
+            "home_score": m["home_score"], "away_score": m["away_score"],
+            "after_extra_time": m["after_extra_time"], "venue": m["venue"],
+        })
+        print("  %s %s | %s" % (m["competition_name"], m["round_name"], line))
+    print("=" * 64)
+    print("  %d/%d matches dated" % (len(chron), total))
+    conn.close()
+
+
 def cmd_leaderboard(args):
     conn = _require_db()
     try:
@@ -246,6 +317,8 @@ def cmd_leaderboard(args):
     titles = {
         "titles": "All-time leaderboard: titles won",
         "matches": "All-time leaderboard: matches played / wins / goal difference",
+        "wins": "All-time leaderboard: matches won",
+        "gd": "All-time leaderboard: goal difference",
         "finals": "All-time leaderboard: finals reached (champion + runner-up)",
     }
     print(titles[args.kind])
@@ -261,7 +334,8 @@ def cmd_leaderboard(args):
         for r in rows:
             print("%-4s %-28s %-8s %d" % (
                 r["rank"], r["name"], r["country"] or "", r["titles"]))
-    elif args.kind == "matches":
+    elif args.kind in ("matches", "wins", "gd"):
+        # Same table for all three - they differ only in leaderboard() sort order.
         print("%-4s %-28s %-8s %7s %5s %5s %5s %5s %5s" % (
             "#", "Club", "Country", "Played", "W", "D", "L", "GD", "GF"))
         for r in rows:
@@ -441,6 +515,7 @@ def main(argv=None):
     p_lb.add_argument(
         "kind", choices=list(LEADERBOARD_KINDS),
         help="titles: trophies won; matches: played/wins/goal difference; "
+             "wins: matches won; gd: goal difference; "
              "finals: finals reached (champion + runner-up)",
     )
     p_lb.add_argument(
@@ -448,6 +523,19 @@ def main(argv=None):
         help="Maximum rows to print (default: all)",
     )
     p_lb.set_defaults(func=cmd_leaderboard)
+
+    p_path = sub.add_parser(
+        "path", help="A club's campaign through one season - rounds, opponents, scorelines",
+    )
+    p_path.add_argument("club_key")
+    p_path.add_argument("season_label")
+    p_path.set_defaults(func=cmd_path)
+
+    p_chron = sub.add_parser(
+        "chronology", help="Dated matches for a season, oldest first",
+    )
+    p_chron.add_argument("season_label")
+    p_chron.set_defaults(func=cmd_chronology)
 
     p_season = sub.add_parser("season", help="Season round-by-round breakdown")
     p_season.add_argument("season_label")

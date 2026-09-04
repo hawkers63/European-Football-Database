@@ -231,6 +231,55 @@ class TestCmdSeasonLegDisplay(unittest.TestCase):
 
 
 @unittest.skipUnless(os.path.exists(DB_PATH), "european_football.db not built yet")
+class TestCmdPathAndChronology(unittest.TestCase):
+    def _run(self, argv):
+        import io
+        from contextlib import redirect_stdout
+        import cli
+
+        out = io.StringIO()
+        with redirect_stdout(out):
+            cli.main(argv)
+        return out.getvalue()
+
+    def test_path_prints_full_campaign_in_round_order(self):
+        text = self._run(["path", "benfica", "1961-62"])
+        self.assertLess(
+            text.index("First Round"), text.index("Quarter-Finals"))
+        self.assertLess(
+            text.index("Quarter-Finals"), text.index("Semi-Finals"))
+        # "Final" is a substring of "Semi-Finals", so anchor on the distinct
+        # "[WON ] Final" round header instead.
+        self.assertLess(text.index("Semi-Finals"), text.index("] Final ("))
+        self.assertIn("Real Madrid", text)
+
+    def test_path_includes_walkover_with_no_score_line(self):
+        text = self._run(["path", "eintracht", "1959-60"])
+        self.assertIn("[walkover]", text)
+        self.assertIn("withdrew", text)
+
+    def test_path_unknown_season_exits_with_message(self):
+        with self.assertRaises(SystemExit):
+            self._run(["path", "benfica", "1899-00"])
+
+    def test_chronology_prints_dated_footer(self):
+        text = self._run(["chronology", "1961-62"])
+        self.assertIn("matches dated", text)
+        self.assertIn("European Cup", text)
+        self.assertIn("European Cup Winners' Cup", text)
+
+    def test_chronology_unknown_season_exits_with_message(self):
+        with self.assertRaises(SystemExit):
+            self._run(["chronology", "1899-00"])
+
+    def test_leaderboard_wins_and_gd_print_the_matches_table(self):
+        for kind in ("wins", "gd"):
+            text = self._run(["leaderboard", kind, "--limit", "3"])
+            self.assertIn("Played", text)
+            self.assertIn("GD", text)
+
+
+@unittest.skipUnless(os.path.exists(DB_PATH), "european_football.db not built yet")
 class TestExportEdition(unittest.TestCase):
     """_export_edition() used to reuse one cursor across nested loops and the
     get_club_display_name() lookups inside them, silently truncating results -
